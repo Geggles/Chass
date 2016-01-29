@@ -1,33 +1,43 @@
+import com.trolltech.qt.QSignalEmitter;
+import GUI.Signals;
 import com.trolltech.qt.gui.*;
 
-public class GuiController implements Controller{
+public class GuiController extends QSignalEmitter implements Controller{
+    /*Emit when file->save is invoked*/
+    private Signals signals = new Signals();
+
     private QMainWindow mainWin;
     public GuiController(){
-    }
-
-    private void setupMenuBar(){
-        QMenuBar menuBar = new QMenuBar(mainWin);
-        QMenu fileMenu = new QMenu(menuBar);
-        menuBar.addMenu(fileMenu);
-        mainWin.setMenuBar(menuBar);
+        String[] args = new String[0];
+        QApplication app = new QApplication(args);
+        setupGui();
+        signals.saveGame.connect(this, "saveGame()");
+        signals.exitApplication.connect(app, "exit()");
+        app.exec();
     }
 
     public int startGame(){
-        setupGui();
         return 0;
     }
+
     private void setupGui(){
-        String[] args = new String[0];
-        QApplication app = new QApplication(args);
         mainWin = new QMainWindow();
         QWidget centralWidget = new QWidget(mainWin);
         mainWin.setCentralWidget(centralWidget);
 
         setupMenuBar();
-
         mainWin.show();
-        app.exec();
     }
+
+    private void setupMenuBar(){
+        QMenuBar menuBar = new QMenuBar(mainWin);
+        QMenu fileMenu = new QMenu("File");
+        menuBar.addMenu(fileMenu);
+        fileMenu.addAction("Save", signals.saveGame);
+        fileMenu.addAction("Exit", signals.exitApplication);
+        mainWin.setMenuBar(menuBar);
+    }
+
     public int saveGame(){
         return 0;
     }
