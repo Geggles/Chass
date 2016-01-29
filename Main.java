@@ -10,7 +10,7 @@ public class Main {
         if (args.length != 0 && args[0].equals("gui")) {
             controller = new GuiController();
         }else{
-            controller = new CommandLineController();
+            controller = new ConsoleController();
         }
         controller.startGame();
     }
