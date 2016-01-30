@@ -11,6 +11,12 @@ public class StandardBoard extends PlayBoard{
         setupPieces(color);
     }
 
+    public Square getSquareAt(int[] coordinates){
+        int height = coordinates[0];
+        int width = coordinates[1] % 8;
+        return super.getSquareAt(new int[] {height, width});
+    }
+
     private void setupPieces(Colors color){
         //pawns
         int row; // row that pawns start out on

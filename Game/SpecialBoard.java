@@ -7,16 +7,9 @@ public class SpecialBoard extends PlayBoard{
     public SpecialBoard() {
 
     }
-
-    public void move(Square source, Square destination){
-
-    }
-
-    public boolean validMove(Square source, Square destination){
-        return true;
-    }
-
-    public void capture(Square source, Square destination){
-
+    public Square getSquareAt(int[] coordinates){
+        int height = coordinates[0] % 8;
+        int width = coordinates[1] % 8;
+        return super.getSquareAt(new int[] {height, width});
     }
 }
