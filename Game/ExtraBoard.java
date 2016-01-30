@@ -5,6 +5,5 @@ package Game;
  */
 public abstract class ExtraBoard extends Board{
     public ExtraBoard(){
-        squares = new Square[8][4];
     }
 }
