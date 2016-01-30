@@ -1,6 +1,5 @@
 package Game;
 
-import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 import java.util.ArrayList;
@@ -8,6 +7,7 @@ import java.util.ArrayList;
 public abstract class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
     private HashBiMap<Square, int[]> squares;
+    public Color color;
     protected abstract void setupSquares();
 
     protected void initializeSquares(int size){
@@ -52,6 +52,10 @@ public abstract class Board {
 
     public void setPieceAt(Piece piece, int[] coordinates){
         setPieceAt(piece, getSquareAt(coordinates));
+    }
+
+    public void removePiece(Piece piece){
+        removePieceFrom(getSquareOf(piece));
     }
 
     public void removePieceFrom(Square square){
