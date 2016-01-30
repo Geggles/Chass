@@ -3,51 +3,77 @@ package Game;
 /**
  * Used for boards Alpha and Beta
  * */
-public class StandardBoard extends PlayBoard{
+public class StandardBoard extends PlayBoard {
     /**
      * Color corresponds to the color of the army that starts out on the board
-     * */
-    public StandardBoard(Colors color){
-        setupPieces(color);
+     */
+    public StandardBoard(Color color) {
+        this.color = color;
+        setupPieces();
     }
 
-    public Square getSquareAt(int[] coordinates){
+    public Square getSquareAt(int[] coordinates) {
         int height = coordinates[0];
         int width = coordinates[1] % 8;
-        return super.getSquareAt(new int[] {height, width});
+        return super.getSquareAt(new int[]{height, width});
     }
 
-    private void setupPieces(Colors color){
+    private void setupPieces() {
         //pawns
         int row; // row that pawns start out on
         Square square;
         Piece piece;
 
-        if (color == Colors.BLACK){
+        if (color == Color.BLACK) {
             row = 6;
-        }else{
+        } else {
             row = 1;
         }
 
-        for (int column=0; column<8; column++){
-            setPieceAt(new Piece(PieceValue.PAWN), new int[] {row, column});
+        for (int column = 0; column < 8; column++) {
+            setPieceAt(new Piece(Value.PAWN), new int[]{row, column});
         }
 
         //other pieces
-        if (color == Colors.BLACK){
+        if (color == Color.BLACK) {
             row = 7;
-        }else{
+        } else {
             row = 0;
         }
 
-        setPieceAt(new Piece(PieceValue.ROOK), new int[] {row, 0});
-        setPieceAt(new Piece(PieceValue.KNIGHT), new int[] {row, 1});
-        setPieceAt(new Piece(PieceValue.BISHOP), new int[] {row, 2});
-        setPieceAt(new Piece(PieceValue.QUEEN), new int[] {row, 3});
-        setPieceAt(new Piece(PieceValue.KING), new int[] {row, 4});
-        setPieceAt(new Piece(PieceValue.BISHOP), new int[] {row, 5});
-        setPieceAt(new Piece(PieceValue.KNIGHT), new int[] {row, 6});
-        setPieceAt(new Piece(PieceValue.ROOK), new int[] {row, 7});
+        setPieceAt(new Piece(Value.ROOK), new int[]{row, 0});
+        setPieceAt(new Piece(Value.KNIGHT), new int[]{row, 1});
+        setPieceAt(new Piece(Value.BISHOP), new int[]{row, 2});
+        setPieceAt(new Piece(Value.QUEEN), new int[]{row, 3});
+        setPieceAt(new Piece(Value.KING), new int[]{row, 4});
+        setPieceAt(new Piece(Value.BISHOP), new int[]{row, 5});
+        setPieceAt(new Piece(Value.KNIGHT), new int[]{row, 6});
+        setPieceAt(new Piece(Value.ROOK), new int[]{row, 7});
 
+    }
+
+    /**
+     * Check whether the piece on 'square' is pinned or not.
+     */
+    public boolean isPinned(Square square) {
+        StandardBoard board = (StandardBoard) square.board;
+        Piece piece = board.getPieceOn(square);
+        if (piece == null || piece.color == board.color) return false;
+        for (Piece p :
+                board.getAllPieces()) {
+            if (p.value == Value.KING && p.color != piece.color) {
+                Square kingSquare = board.getSquareOf(p);
+                board.removePiece(piece);
+                boolean result = board.isUnderAttack(kingSquare, piece.color);
+                board.setPieceAt(piece, square);
+                return result;
+            }
+        }
+        throw new IllegalArgumentException("King has fallen over board!"); //<- should never be able to
+        // be thrown, but IDE bugs me.
+    }
+
+    public boolean isPinned(Piece piece, Board board) {
+        return isPinned(board.getSquareOf(piece));
     }
 }
