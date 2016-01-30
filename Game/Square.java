@@ -1,7 +1,7 @@
 package Game;
 
 public class Square {
-    public Colors color;
+    public Color color;
     public Board board;
 
     public Square(){

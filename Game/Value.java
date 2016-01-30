@@ -1,6 +1,6 @@
 package Game;
 
-public enum PieceValue {
+public enum Value {
     PAWN(1),
     BISHOP(3),
     KNIGHT(3),
@@ -10,7 +10,7 @@ public enum PieceValue {
 
     public final int value;
 
-    PieceValue(int value){
+    Value(int value){
         this.value = value;
     }
 
