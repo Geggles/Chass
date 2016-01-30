@@ -2,9 +2,10 @@ package Game;
 
 public class Piece {
     private Colors color;
+    private PieceValue value;
 
-    public Piece(){
-
+    public Piece(PieceValue value){
+        this.value = value;
     }
 
     public void setColor(Colors color){
