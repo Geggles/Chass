@@ -8,13 +8,13 @@ public enum PieceValue {
     QUEEN(9),
     KING(-1);
 
-    private int value;
+    public final int value;
 
     PieceValue(int value){
         this.value = value;
     }
 
-    public int getValue(){
+/*    public int getValue(){
         return this.value;
-    }
+    }*/
 }

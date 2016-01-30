@@ -1,18 +1,15 @@
 package Game;
 
 public class Piece {
-    private Colors color;
-    private PieceValue value;
+    public Colors color;
+    public boolean canNullMove = true;
+    public int pinned = 0;
+    public final PieceValue value;
 
     public Piece(PieceValue value){
         this.value = value;
-    }
-
-    public void setColor(Colors color){
-        this.color = color;
-    }
-
-    public Colors getColor(){
-        return color;
+        if (value == PieceValue.KING){
+            this.canNullMove = false;
+        }
     }
 }
