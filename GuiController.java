@@ -5,6 +5,7 @@ import com.trolltech.qt.gui.*;
 public class GuiController extends QSignalEmitter implements Controller{
     /*Emit when file->save is invoked*/
     private Signals signals = new Signals();
+    private Game.Controller gameController;
 
     private QMainWindow mainWin;
     public GuiController(){
@@ -17,6 +18,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     public int startGame(){
+        gameController = new Game.Controller();
+        gameController.newGame();
         return 0;
     }
 

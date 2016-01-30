@@ -42,6 +42,10 @@ public abstract class Board {
         return squares.get(square);
     }
 
+    public int[] getCoordinateOf(Piece piece){
+        return getCoordinateOf(state.inverse().get(piece));
+    }
+
     public void setPieceAt(Piece piece, Square square){
         state.put(square, piece);
     }
