@@ -5,7 +5,7 @@ package Game;
  * */
 public class SpecialBoard extends PlayBoard{
     public SpecialBoard() {
-
+        super("C", null);
     }
     public Square getSquareAt(int[] coordinates){
         int height = coordinates[0] % 8;
