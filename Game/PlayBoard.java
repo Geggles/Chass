@@ -2,8 +2,6 @@ package Game;
 
 import com.google.common.collect.HashBiMap;
 
-import java.util.HashMap;
-
 /**
 * Used for Boards Alpha, Beta and Gamma
 * */
@@ -92,7 +90,7 @@ public abstract class PlayBoard extends Board{
                 square = new Square(currentColor, this);
                 coordinate = new int[] {row, column};
                 addSquareAt(coordinate, square);
-                currentColor = Color.switchColors(currentColor);
+                currentColor = Color.oppositeColor(currentColor);
             }
         }
     }
@@ -102,7 +100,7 @@ public abstract class PlayBoard extends Board{
      * */
     public boolean isUnderAttack(Square square, Color color){
         Board board = square.board;
-        int[] coordinates = board.getCoordinateOf(square);
+        int[] coordinates = board.getCoordinatesOf(square);
         int row = coordinates[0];
         int column = coordinates[1];
         int searchRow;
@@ -238,7 +236,7 @@ public abstract class PlayBoard extends Board{
     }
 
     public String getSquareName(Square square){
-        return getSquareName(getCoordinateOf(square));
+        return getSquareName(getCoordinatesOf(square));
     }
 
     public Square getSquareAt(String squareName){
