@@ -5,9 +5,16 @@ import com.google.common.collect.HashBiMap;
 import java.util.ArrayList;
 
 public abstract class Board {
+    public final String name;
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
     private HashBiMap<Square, int[]> squares;
-    public Color color;
+    public final Color color;
+
+    public Board(String name, Color color){
+        this.name = name;
+        this.color = color;
+    }
+
     protected abstract void setupSquares();
 
     protected void initializeSquares(int size){
@@ -34,16 +41,16 @@ public abstract class Board {
         return squares.inverse().get(coordinates);
     }
 
-    protected void addCoordinateOf(int[] coordinates, Square square){
+    protected void addCoordinatesOf(int[] coordinates, Square square){
         squares.put(square, coordinates);
     }
 
-    public int[] getCoordinateOf(Square square){
+    public int[] getCoordinatesOf(Square square){
         return squares.get(square);
     }
 
-    public int[] getCoordinateOf(Piece piece){
-        return getCoordinateOf(state.inverse().get(piece));
+    public int[] getCoordinatesOf(Piece piece){
+        return getCoordinatesOf(state.inverse().get(piece));
     }
 
     public void setPieceAt(Piece piece, Square square){
@@ -70,5 +77,11 @@ public abstract class Board {
         ArrayList<Piece> res = new ArrayList<>();
         state.forEach((square, piece) -> res.add(piece));
         return res;
+    }
+
+    public ArrayList<Piece> getPieces(Value value){
+        ArrayList<Piece> result = new ArrayList<>(2);
+        getAllPieces().forEach(piece -> {if (piece.value == value) result.add(piece);});
+        return result;
     }
 }
