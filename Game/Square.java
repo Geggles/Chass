@@ -1,10 +1,11 @@
 package Game;
 
 public class Square {
-    public Color color;
-    public Board board;
+    public final Color color;
+    public final Board board;
 
-    public Square(){
-
+    public Square(Color color, Board board){
+        this.color = color;
+        this.board = board;
     }
 }
