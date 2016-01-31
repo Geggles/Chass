@@ -21,8 +21,6 @@ public class StandardBoard extends PlayBoard {
     private void setupPieces() {
         //pawns
         int row; // row that pawns start out on
-        Square square;
-        Piece piece;
 
         if (color == Color.BLACK) {
             row = 6;
