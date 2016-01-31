@@ -1,14 +1,23 @@
 package Game;
 
+import java.util.HashMap;
+
 /**
  * Used for boards Alpha and Beta
  * */
 public class StandardBoard extends PlayBoard {
+    private static final HashMap<Color, String> names;
+    static
+    {
+        names = new HashMap<>();
+        names.put(Color.WHITE, "A");
+        names.put(Color.BLACK, "B");
+    }
     /**
      * Color corresponds to the color of the army that starts out on the board
      */
     public StandardBoard(Color color) {
-        this.color = color;
+        super(names.get(color), color);
         setupPieces();
     }
 
@@ -70,8 +79,21 @@ public class StandardBoard extends PlayBoard {
         throw new IllegalArgumentException("King has fallen over board!"); //<- should never be able to
         // be thrown, but IDE bugs me.
     }
-
-    public boolean isPinned(Piece piece, Board board) {
+    public boolean isPinned(Piece piece, StandardBoard board) {
         return isPinned(board.getSquareOf(piece));
+    }
+    /**
+     * Check whether king is in check
+     * */
+    public boolean check(){
+        Square kingSquare = null;
+        for (Piece piece :
+                getAllPieces()) {
+            if (piece.value==Value.KING){
+                kingSquare = getSquareOf(piece);
+                break;
+            }
+        }
+        return isUnderAttack(kingSquare, Color.oppositeColor(color));
     }
 }
