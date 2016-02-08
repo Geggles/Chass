@@ -38,15 +38,15 @@ public class Controller {
         Piece piece = sourceBoard.getPieceOn(source);
 
         sourceBoard.removePieceFrom(source);
-        if(destinationBoard.getPieceOn(sourceBoard.getCoordinateOf(destination)) == null){
-            destinationBoard.setPieceAt(piece, sourceBoard.getCoordinateOf(destination));
+        if(destinationBoard.getPieceOn(sourceBoard.getCoordinatesOf(destination)) == null){
+            destinationBoard.setPieceAt(piece, sourceBoard.getCoordinatesOf(destination));
         }else {
             sourceBoard.setPieceAt(piece, destination);
         }
     }
 
     /**
-     * Do special moves en passant or casteling as applicable.
+     * Do special moves en passant or castling as applicable.
      * Return true if special move has been made; false otherwise.
      * */
     public boolean doSpecialMove(Square source, Square destination){
@@ -104,7 +104,7 @@ public class Controller {
             StandardBoard standardBoard = (StandardBoard)board;
             if (standardBoard.isPinned(source)) return false;
             if (piece.value == Value.KING &&
-                (standardBoard.isUnderAttack(destination, Color.switchColors(piece.color)))) {
+                (standardBoard.isUnderAttack(destination, Color.oppositeColor(piece.color)))) {
                     return false;
             }
             return true;
@@ -123,7 +123,7 @@ public class Controller {
 
         if (!validMove(source, destination)) return false;
         ExtraBoard sourceBoard = (ExtraBoard)source.board;
-        if (destinationBoard.getPieceOn(sourceBoard.getCoordinateOf(destination))!=null){
+        if (destinationBoard.getPieceOn(sourceBoard.getCoordinatesOf(destination))!=null){
             return false;
         }
         return true;
