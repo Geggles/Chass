@@ -5,6 +5,7 @@ import com.google.common.collect.HashBiMap;
 * Used for Boards Alpha, Beta and Gamma
 * */
 public abstract class PlayBoard extends Board{
+    public final String name;
     private static final HashBiMap<int[], String> squareNames = HashBiMap.create(64);
     static
     {
@@ -19,7 +20,8 @@ public abstract class PlayBoard extends Board{
     }
 
     public PlayBoard(String name, Color color){
-        super(name, color);
+        super(color);
+        this.name = name;
         initializeSquares(64);
         setupSquares();
     }
