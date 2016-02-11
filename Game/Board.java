@@ -5,13 +5,11 @@ import com.google.common.collect.HashBiMap;
 import java.util.ArrayList;
 
 public abstract class Board {
-    public final String name;
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
     private HashBiMap<Square, int[]> squares;
     public final Color color;
 
-    public Board(String name, Color color){
-        this.name = name;
+    public Board(Color color){
         this.color = color;
     }
 
