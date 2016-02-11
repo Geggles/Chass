@@ -175,11 +175,11 @@ public abstract class PlayBoard extends Board{
         return getSquareName(getCoordinates(square));
     }
 
-    public String getSquareName(int[] coordinates){
+    public static String getSquareName(int[] coordinates){
         return squareNames.get(coordinates);
     }
 
-    public String getSquareName(int row, int column){
+    public static String getSquareName(int row, int column){
         return squareNames.get(new int[] {row, column});
     }
 
@@ -191,7 +191,7 @@ public abstract class PlayBoard extends Board{
         return getSquare(getCoordinates(squareName));
     }
 
-    public int[] getCoordinates(String squareName){
+    public static int[] getCoordinates(String squareName){
         return squareNames.inverse().get(squareName);
     }
 }
