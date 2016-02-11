@@ -8,7 +8,7 @@ public class Swap extends Move{
                 int[] coordinates,
                 PlayBoard[] constellationBefore,
                 PlayBoard[] constellationAfter){
-        super(player, null);
+        super(player);
         this.constellationBefore = constellationBefore;
         this.constellationAfter = constellationAfter;
         this.coordinates = coordinates;

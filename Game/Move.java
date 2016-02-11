@@ -1,9 +1,14 @@
 package Game;
 
-import com.sun.istack.internal.Nullable;
+/*import com.sun.istack.internal.Nullable;*/
 
-public class Move {
-    public final MoveType moveType;
+public abstract class Move {
+    public final Color player;
+    public State state;
+    public Move(Color player){
+        this.player = player;
+    }
+/*    public final MoveType moveType;
     public final Square source;
     public final Square destination;
     public final PlayBoard destinationBoardPlayer;
@@ -27,5 +32,5 @@ public class Move {
         this.destinationBoardOpponent= destinationBoardOpponent;
         this.sourcePiece = sourcePiece;
         this.destinationPiece = destinationPiece;
-    }
+    }*/
 }
