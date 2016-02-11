@@ -171,26 +171,27 @@ public abstract class PlayBoard extends Board{
         return 1;
     }
 
-    /**
-     * (0,0) -> "a1"
-     * */
-    public String getSquareName(int[] coordinates){
-        return squareNames.get(coordinates);
-    }
-
     public String getSquareName(Square square){
         return getSquareName(getCoordinates(square));
     }
 
-    public Piece getPieceOn(String squareName){
-        return getPiece(getSquareAt(squareName));
+    public String getSquareName(int[] coordinates){
+        return squareNames.get(coordinates);
     }
 
-    public Square getSquareAt(String squareName){
-        return getSquare(getCoordinatesOf(squareName));
+    public String getSquareName(int row, int column){
+        return squareNames.get(new int[] {row, column});
     }
 
-    public int[] getCoordinatesOf(String squareName){
+    public Piece getPiece(String squareName){
+        return getPiece(getSquare(squareName));
+    }
+
+    public Square getSquare(String squareName){
+        return getSquare(getCoordinates(squareName));
+    }
+
+    public int[] getCoordinates(String squareName){
         return squareNames.inverse().get(squareName);
     }
 }
