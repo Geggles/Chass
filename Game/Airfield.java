@@ -1,8 +1,8 @@
 package Game;
 
 public class Airfield extends ExtraBoard{
-    public Airfield(String name, Color color) {
-        super(name, color);
+    public Airfield(Color color) {
+        super(color);
     }
 
     public void setupSquares(){

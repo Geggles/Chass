@@ -1,8 +1,8 @@
 package Game;
 
 public class Prison extends ExtraBoard{
-    public Prison(String name, Color color){
-        super(name, color);
+    public Prison(Color color){
+        super(color);
     }
     protected void setupSquares(){
 
@@ -11,8 +11,8 @@ public class Prison extends ExtraBoard{
     public Square getEmptyCell(){
         for (int row=0; row<8; row++){
             for (int column=0; column<8; column++){
-                if (getPieceOn(new int[] {row, column}) == null) {
-                    return getSquareAt(new int[] {row, column});
+                if (getPiece(new int[] {row, column}) == null) {
+                    return getSquare(new int[] {row, column});
                 }
             }
         }
