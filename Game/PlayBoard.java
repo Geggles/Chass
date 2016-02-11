@@ -1,5 +1,4 @@
 package Game;
-
 import com.google.common.collect.HashBiMap;
 
 /**
@@ -9,70 +8,14 @@ public abstract class PlayBoard extends Board{
     private static final HashBiMap<int[], String> squareNames = HashBiMap.create(64);
     static
     {
-        squareNames.put(new int[] {0, 0}, "a1");
-        squareNames.put(new int[] {0, 1}, "b1");
-        squareNames.put(new int[] {0, 2}, "c1");
-        squareNames.put(new int[] {0, 3}, "d1");
-        squareNames.put(new int[] {0, 4}, "e1");
-        squareNames.put(new int[] {0, 5}, "f1");
-        squareNames.put(new int[] {0, 6}, "g1");
-        squareNames.put(new int[] {0, 7}, "h1");
-        squareNames.put(new int[] {1, 0}, "a2");
-        squareNames.put(new int[] {1, 1}, "b2");
-        squareNames.put(new int[] {1, 2}, "c2");
-        squareNames.put(new int[] {1, 3}, "d2");
-        squareNames.put(new int[] {1, 4}, "e2");
-        squareNames.put(new int[] {1, 5}, "f2");
-        squareNames.put(new int[] {1, 6}, "g2");
-        squareNames.put(new int[] {1, 7}, "h2");
-        squareNames.put(new int[] {2, 0}, "a3");
-        squareNames.put(new int[] {2, 1}, "b3");
-        squareNames.put(new int[] {2, 2}, "c3");
-        squareNames.put(new int[] {2, 3}, "d3");
-        squareNames.put(new int[] {2, 4}, "e3");
-        squareNames.put(new int[] {2, 5}, "f3");
-        squareNames.put(new int[] {2, 6}, "g3");
-        squareNames.put(new int[] {2, 7}, "h3");
-        squareNames.put(new int[] {3, 0}, "a4");
-        squareNames.put(new int[] {3, 1}, "b4");
-        squareNames.put(new int[] {3, 2}, "c4");
-        squareNames.put(new int[] {3, 3}, "d4");
-        squareNames.put(new int[] {3, 4}, "e4");
-        squareNames.put(new int[] {3, 5}, "f4");
-        squareNames.put(new int[] {3, 6}, "g4");
-        squareNames.put(new int[] {3, 7}, "h4");
-        squareNames.put(new int[] {4, 0}, "a5");
-        squareNames.put(new int[] {4, 1}, "b5");
-        squareNames.put(new int[] {4, 2}, "c5");
-        squareNames.put(new int[] {4, 3}, "d5");
-        squareNames.put(new int[] {4, 4}, "e5");
-        squareNames.put(new int[] {4, 5}, "f5");
-        squareNames.put(new int[] {4, 6}, "g5");
-        squareNames.put(new int[] {4, 7}, "h5");
-        squareNames.put(new int[] {5, 0}, "a6");
-        squareNames.put(new int[] {5, 1}, "b6");
-        squareNames.put(new int[] {5, 2}, "c6");
-        squareNames.put(new int[] {5, 3}, "d6");
-        squareNames.put(new int[] {5, 4}, "e6");
-        squareNames.put(new int[] {5, 5}, "f6");
-        squareNames.put(new int[] {5, 6}, "g6");
-        squareNames.put(new int[] {5, 7}, "h6");
-        squareNames.put(new int[] {6, 0}, "a7");
-        squareNames.put(new int[] {6, 1}, "b7");
-        squareNames.put(new int[] {6, 2}, "c7");
-        squareNames.put(new int[] {6, 3}, "d7");
-        squareNames.put(new int[] {6, 4}, "e7");
-        squareNames.put(new int[] {6, 5}, "f7");
-        squareNames.put(new int[] {6, 6}, "g7");
-        squareNames.put(new int[] {6, 7}, "h7");
-        squareNames.put(new int[] {7, 0}, "a8");
-        squareNames.put(new int[] {7, 1}, "b8");
-        squareNames.put(new int[] {7, 2}, "c8");
-        squareNames.put(new int[] {7, 3}, "d8");
-        squareNames.put(new int[] {7, 4}, "e8");
-        squareNames.put(new int[] {7, 5}, "f8");
-        squareNames.put(new int[] {7, 6}, "g8");
-        squareNames.put(new int[] {7, 7}, "h8");
+        String names = "abcdefgh";
+        for (int row=0; row<8; row++){
+            for (int column=0; column<8; column++){
+                squareNames.put(
+                        new int[] {row, column},
+                        names.charAt(column) + Integer.toString(row+1));
+            }
+        }
     }
 
     public PlayBoard(String name, Color color){
@@ -100,7 +43,7 @@ public abstract class PlayBoard extends Board{
      * */
     public boolean isUnderAttack(Square square, Color color){
         Board board = square.board;
-        int[] coordinates = board.getCoordinatesOf(square);
+        int[] coordinates = board.getCoordinates(square);
         int row = coordinates[0];
         int column = coordinates[1];
         int searchRow;
@@ -219,9 +162,9 @@ public abstract class PlayBoard extends Board{
      * return -1 if the is no such square
      * return 2 if there is no piece on the square*/
     private int testSquare(int row, int column, Board board, Color color, Value value){
-        Square square = board.getSquareAt(new int[] {row, column});
+        Square square = board.getSquare(new int[] {row, column});
         if (square == null) return -1;
-        Piece piece = board.getPieceOn(square);
+        Piece piece = board.getPiece(square);
         if (piece == null) return 2;
         if (piece.color != color) return 0;
         if (piece.value != value) return 0;
@@ -236,11 +179,15 @@ public abstract class PlayBoard extends Board{
     }
 
     public String getSquareName(Square square){
-        return getSquareName(getCoordinatesOf(square));
+        return getSquareName(getCoordinates(square));
+    }
+
+    public Piece getPieceOn(String squareName){
+        return getPiece(getSquareAt(squareName));
     }
 
     public Square getSquareAt(String squareName){
-        return getSquareAt(getCoordinatesOf(squareName));
+        return getSquare(getCoordinatesOf(squareName));
     }
 
     public int[] getCoordinatesOf(String squareName){
