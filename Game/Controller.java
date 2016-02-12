@@ -242,9 +242,9 @@ public class Controller {
         Move move;
         Character state = null;
         Character promotion = null;
-        Character[] pieceNames;
-        Character[] boardNames;
-        String[] squareNames;
+        Character[] pieceNames = null;
+        Character[] boardNames = null;
+        String[] squareNames = null;
 
         switch (moveString.charAt(moveString.length() - 1)){  // last char
             case '+':
@@ -306,21 +306,19 @@ public class Controller {
                 squareNames[1] = moveString.substring(5, 7);
                 pieceNames = new Character[2];
                 pieceNames[0] = moveString.charAt(1);
-                pieceNames[0] = moveString.charAt(4);
+                pieceNames[1] = moveString.charAt(4);
                 if (moveString.charAt(startOfConstellation)=='C') {  // steal
                     boardNames = new Character[3];
                     boardNames[1] = moveString.charAt(startOfConstellation + 3);
                     boardNames[2] = moveString.charAt(startOfConstellation + 5);
-                }else{  // capture
+                }else{  // capture/en passant
                     boardNames = new Character[2];
                     boardNames[1] = moveString.charAt(startOfConstellation + 3);
+                    if ("PBNQR".charAt(moveString.charAt(4))==-1){  // en passant
+                        pieceNames = new Character[0];
+                        squareNames[1] = moveString.substring(4, 6);
+                    }
                 }
-            } else {  // en passant
-                pieceNames = new Character[0];
-                boardNames = new Character[2];
-                squareNames = new String[2];
-                squareNames[1] = moveString.substring(4, 6);
-                boardNames[1] = moveString.charAt(startOfConstellation + 3);
             }
             boardNames[0] = moveString.charAt(startOfConstellation + 1);
             squareNames[0] = moveString.substring(2, 4);
