@@ -1,19 +1,82 @@
 package Game;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * this class will control the flow of the game
  * */
-public class Controller {
-    StandardBoard alpha;
-    StandardBoard beta;
-    SpecialBoard gamma;
-    HashMap<Color, Prison> prisons;
-    HashMap<Color, Airfield> airfields;
-    Color turnPlayer = Color.WHITE;
-    Notator notator;
 
+public class Controller {
+    private StandardBoard alpha;
+    private StandardBoard beta;
+    private SpecialBoard gamma;
+    private HashMap<Color, Prison> prisons;
+    private HashMap<Color, Airfield> airfields;
+    private Color turnPlayer = Color.WHITE;
+    private LinkedList<String> moves;
+    private int currentPly = 0;
+    /**
+     * Specification for move types:
+     *   <All>:
+     *      state: Either null if move did not lead to a special game state or
+     *               '+' if move lead to a check or
+     *               '#' if move lead to a checkmate or
+     *               '@' if move lead to a stalemate
+     *      promotion: either null if not promotion happened or
+     *                   name of piece that has been promoted to
+     *   Castle:
+     *      pieceNames: Either 'Q' for castle queenside or 'K' for kingside
+     *      boardNames: Empty
+     *      squareNames: Empty
+     *   Drop:
+     *      pieceNames The dropped piece
+     *      boardNames: Empty
+     *      squareNames: square the piece was dropped to
+     *   Hostage Exchange:
+     *      pieceNames: The piece that was given to the opponent
+     *                  The piece that was dropped
+     *      boardNames: Empty
+     *      squareNames: Square the piece was dropped to
+     *   Swap:
+     *      pieceNames: First piece to be swapped
+     *                  Second piece to be swapped
+     *                  [Third piece to be swapped]
+     *      boardNames: Board first piece was on before swap
+     *                  Board second piece was on before swap
+     *                  [Board third piece was on before swap]
+     *                  Board first piece is on after swap
+     *                  Board second piece is on after swap
+     *                  [Board third piece is on after swap]
+     *      squareNames: Square the swap happens on
+     *   Capture:
+     *      pieceNames: Piece that has moved
+     *                  Piece that was captured
+     *      boardNames: Board the capture happened on
+     *                  Board the piece is on after capture
+     *      squareNames: Square the piece started out on
+     *                   Square the capture happened on
+     *   Steal:
+     *      pieceNames: Piece that has moved
+     *                  Piece that was captured
+     *      boardNames: C  // to distinguish it from a normal capture
+     *                  Board the own piece is on after the capture
+     *                  Board the captured piece is on after the capture
+     *      squareNames: Square the piece started out on
+     *                   Square the capture happened on
+     *   En Passant:
+     *      pieceNames: Empty
+     *      boardNames: Board the capture happened on
+     *                  Board the Piece is on after the capture
+     *      squareNames: Square the capturing pawn started out on
+     *                   Square the capturing pawn is on after the capture
+     *   Translate:
+     *      pieceNames: Piece that has moved
+     *      boardNames: Board the translation happened on
+     *                  Board the piece is on after translation
+     *      squareNames: Square the piece started out on
+     *                   Square the piece ended up on
+     */
     public Controller() {
         alpha = new StandardBoard(Color.WHITE);
         beta = new StandardBoard(Color.BLACK);
@@ -24,7 +87,6 @@ public class Controller {
         airfields = new HashMap<>(2);
         airfields.put(Color.WHITE, new Airfield(Color.WHITE));
         airfields.put(Color.BLACK, new Airfield(Color.BLACK));
-        notator = new Notator();
     }
 
     public void newGame(){
@@ -39,294 +101,237 @@ public class Controller {
         return null;
     }
 
-    //belongs into gui/console controllers
-/*    *//**
-     * Check all move types to see whether under given parameters a move can be made.
-     * Return Move object that contains the parameters and move type.
-     * Return null if no move is possible.
-     * *//*
+    private void removeMovesAfter(int turn){
+        moves.subList(moves.size() - turn, moves.size()).clear();
+    }
 
-    public boolean validMove(Square source, Square destination){
-        PlayBoard board = (PlayBoard) source.board;
-        Piece piece = board.getPiece(source);
-        if (piece == null) return false;
-        if (source == destination && !piece.canNullMove) return false;
-        if (board.getPiece(destination) != null) return false;
-        try { // for alpha and beta
-            StandardBoard standardBoard = (StandardBoard)board;
-            if (piece.value == Value.KING &&
-                    (standardBoard.isUnderAttack(destination, Color.oppositeColor(piece.color)))) {
-                return false;
-            }
-            return true;
-        }catch (ClassCastException exception){
+    private void addMove(Move move){
+        String moveString = encodeMove(move);
+        removeMovesAfter(currentPly);
+        moves.add(moveString);
+        incrementPly();
+    }
+
+    private boolean incrementPly(){
+        if (currentPly < moves.size()-1){
+            currentPly ++;
             return true;
         }
+        return false;
     }
 
-    public boolean validCapture(Square source, Square destination){
-        StandardBoard board = (StandardBoard) source.board;
-        Piece sourcePiece = board.getPiece(source);
-        Piece destinationPiece = board.getPiece(destination);
-        if (sourcePiece == null) return false;
-        if (destinationPiece == null) return false;
-        if (destinationPiece.color == sourcePiece.color) return false;
-
-        return true;
+    private boolean decrementPly(){
+        if (currentPly > 0){
+            currentPly --;
+            return true;
+        }
+        return false;
     }
 
-    public boolean validCastle(Color color, Value side){
-        Piece king;
-        Piece rook;
-        PlayBoard board;
-        Square[] squaresInBetween;
-        if (color == Color.WHITE){
-            board = alpha;
-            king = board.getPiece(new int[] {0, 4});
-            if (side == Value.QUEEN){
-                rook = board.getPiece(new int[] {0, 0});
-                squaresInBetween = new Square[] {
-                        board.getSquare(new int[] {0, 1}),
-                        board.getSquare(new int[] {0, 2}),
-                        board.getSquare(new int[] {0, 3})
-                };
-            }else {
-                rook = board.getPiece(new int[] {0, 7});
-                squaresInBetween = new Square[] {
-                        board.getSquare(new int[] {0, 5}),
-                        board.getSquare(new int[] {0, 6})
-                };
-            }
-        }else {
-            board = beta;
-            king = board.getPiece(new int[]{7, 4});
-            if (side == Value.QUEEN) {
-                rook = board.getPiece(new int[]{7, 0});
-                squaresInBetween = new Square[] {
-                        board.getSquare(new int[] {0, 1}),
-                        board.getSquare(new int[] {0, 2}),
-                        board.getSquare(new int[] {0, 3})
-                };
-            }else {
-                rook = board.getPiece(new int[]{7, 7});
-                squaresInBetween = new Square[]{
-                        board.getSquare(new int[]{0, 5}),
-                        board.getSquare(new int[]{0, 6}),
-                };
-            }
-        }
-        if (king==null || rook==null) return false;
-        if (king.value!=Value.KING || rook.value!=Value.ROOK) return false;
-        if (!king.canCastle || !rook.canCastle) return false;
-        for (Square square :
-                squaresInBetween) {
-            if (board.isUnderAttack(square, Color.oppositeColor(color))) return false;
-        }
-        return true;
+    public int getCurrentPly(){
+        return currentPly;
     }
 
-    public boolean validStealing(Square source,
-                                 Square destination,
-                                 PlayBoard destinationBoardPlayer,
-                                 PlayBoard destinationBoardOpponent){
-        if (source.board != gamma) return false;
-        if (destination.board != gamma) return false;
-        Piece sourcePiece = gamma.getPiece(source);
-        if (sourcePiece == null) return false;
-        Piece destinationPiece = gamma.getPiece(destination);
-        if (destinationPiece == null) return false;
-        if (destinationBoardOpponent.getPiece(gamma.getCoordinates(destination)) != null){
-            return false;
-        }
-        StandardBoard otherBoard = alpha;
-        if (destinationBoardOpponent==alpha) otherBoard = beta;
-        if (otherBoard.getPiece(gamma.getCoordinates(destination)) == null &&
-            destinationBoardPlayer != otherBoard){
-            return false;
-        }
-
-        return true;
+    public LinkedList<String> getMoves(){
+        return moves;
     }
 
-    public boolean validEnPassant(Square source,
-                                  Square destination){
-        StandardBoard board = (StandardBoard) source.board;
-        if (board.getPiece(source) == null) return false;
-        int sourceRow = board.getCoordinates(source)[0];
-        int sourceColumn = board.getCoordinates(source)[1];
+    private String encodeMove(Move move){
+        String moveString = "INVALID";
+        String promotionString = "";
+        if (move.promotion!=null) promotionString = "=" + promotionString;
+        String stateString = "";
+        if (move.promotion!=null) stateString = move.state.toString();
 
-        int column = board.getCoordinates(destination)[1];
-        int direction = 1;
-        int rightStartRow = 6;
-        if (turnPlayer == Color.WHITE){
-            direction = -1;
-            rightStartRow = 1;
+        if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 0){  // castle:
+            moveString = "O-O";
+            if (move.pieceNames[0]=='Q') moveString = "O-O-O";
+        }else if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 1){  // drop
+            moveString = String.format(">%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0]);
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 1) {  // hostage exchange
+            moveString = String.format("%s>%s%s",
+                    move.pieceNames[0],
+                    move.pieceNames[1],
+                    move.squareNames[0]);
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 4 &&
+                move.squareNames.length == 1) {  // swap2
+            moveString = String.format("%s%s-%s%s_%s%s>%s%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0],
+                    move.pieceNames[1],
+                    promotionString,
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    move.boardNames[2],
+                    move.boardNames[3],
+                    stateString);
+        }else if (move.pieceNames.length == 3 &&
+                move.boardNames.length == 6 &&
+                move.squareNames.length == 1) {  // swap3
+            moveString = String.format("%s%s-%s-%s%s_%s%s%s>%s%s%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0],
+                    move.pieceNames[1],
+                    move.pieceNames[2],
+                    promotionString,
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    move.boardNames[2],
+                    move.boardNames[3],
+                    move.boardNames[4],
+                    move.boardNames[5],
+                    stateString);
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // capture
+            moveString = String.format("%s%sx%s%s%s_%s>%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0],
+                    move.pieceNames[1],
+                    move.squareNames[1],
+                    promotionString,
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    stateString);
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 3 &&
+                move.squareNames.length == 2) {  // steal
+            moveString = String.format("%s%sx%s%s%s_%s>%s>%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0],
+                    move.pieceNames[1],
+                    move.squareNames[1],
+                    promotionString,
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    move.boardNames[2],
+                    stateString);
+        }else if (move.pieceNames.length == 0 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // en passant
+            moveString = String.format("P%sp%s_%s>%s%s",
+                    move.squareNames[0],
+                    move.squareNames[1],
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    stateString);
+        }else if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // translate
+            moveString = String.format("%s%s-%s>%s>%s%s",
+                    move.pieceNames[0],
+                    move.squareNames[0],
+                    move.squareNames[1],
+                    move.boardNames[0],
+                    move.boardNames[1],
+                    stateString);
         }
-
-        Move latestMove = decodeMove(notator.currentTurn());
-        if (latestMove.sourcePiece.value != Value.PAWN) return false;
-        if (latestMove.source.board != board) return false;
-        if (board.getCoordinates(latestMove.source)[0] != rightStartRow) return false;
-        if (board.getCoordinates(latestMove.source)[1] != column) return false;
-        if (board.getCoordinates(latestMove.destination)[0] != rightStartRow+2*direction){
-            return false;
-        }
-        if (sourceRow != rightStartRow+2*direction) return false;
-        if (Math.abs(column - sourceColumn) != 1) return false;
-
-        return true;
+        return moveString;
     }
 
-    public boolean validSwap(){
-
-    }*/
-
-    public void castle(Color color, Value side){
-        Piece king;
-        Piece rook;
-        if (color == Color.WHITE){
-            king = alpha.getPiece(new int[] {0, 4});
-            alpha.removePiece(king);
-            if (side == Value.QUEEN){
-                rook = alpha.getPiece(new int[] {0, 0});
-                alpha.removePiece(rook);
-                alpha.setPiece(new int[] {0, 2}, king);
-                alpha.setPiece(new int[] {0, 4}, rook);
-            }else {
-            rook = alpha.getPiece(new int[] {0, 7});
-            alpha.removePiece(rook);
-            alpha.setPiece(new int[] {0, 6}, king);
-            alpha.setPiece(new int[] {0, 5}, rook);
-            }
-
-        }else {
-            king = beta.getPiece(new int[]{7, 4});
-            beta.removePiece(king);
-            if (side == Value.QUEEN) {
-                rook = beta.getPiece(new int[]{7, 0});
-                beta.removePiece(rook);
-                beta.setPiece(new int[]{7, 2}, king);
-                beta.setPiece(new int[]{7, 4}, rook);
-            }else {
-                rook = beta.getPiece(new int[]{7, 7});
-                beta.removePiece(rook);
-                beta.setPiece(new int[]{7, 6}, king);
-                beta.setPiece(new int[]{7, 5}, rook);
-            }
-        }
-        king.canCastle = false;
-        rook.canCastle = false;
-    }
-
-    public Move decodeMove(){
-        String encoded = notator.getMove();
-        /*
-        * Check in order:
-        * Castling
-        * Drop
-        * Hostage Exchange
-        * Swap
-        * Capture
-        * Steal
-        * En Passant
-        * Translate
-        * */
-
-        State state = State.NONE;
+    private Move decodeMove(String moveString){
         Move move;
-        PlayBoard board;
-        Color player = Color.WHITE;
-        if (notator.currentTurn() % 2 == 0) player = Color.BLACK;
-        if (encoded.endsWith("+")){
-            state = State.CHECK;
-            encoded = encoded.substring(0, encoded.length()-1);
-        }
-        else if (encoded.endsWith("#")){
-            state = State.CHECKMATE;
-            encoded = encoded.substring(0, encoded.length()-1);
+        Character state = null;
+        Character promotion = null;
+        Character[] pieceNames;
+        Character[] boardNames;
+        String[] squareNames;
+
+        switch (moveString.charAt(moveString.length() - 1)){  // last char
+            case '+':
+            case '#':
+            case '@':
+                state = moveString.charAt(moveString.length() - 1);
+                moveString = moveString.substring(0, moveString.length() -1);
         }
 
-        if (encoded.startsWith("O-O")){  // Check for Castling
-            Value side = Value.KING;
-            if (encoded.length()>4) side = Value.QUEEN; // O-O-O
-            board = alpha;
-            if (player == Color.BLACK) board = beta;
-            return new Castling(
-                    player,
-                    state,
-                    side);
-        }
-        if(encoded.charAt(0) == '>'){  // Check for drop from airfield
-            return new Drop(
-                    player,
-                    state,
-                    SpecialBoard.getCoordinates(encoded.substring(2, 4)));
-        }
-        if (encoded.charAt(1) == '>') {  // Check for Hostage Exchange
-            return new HostageExchange(
-                    player,
-                    state,
-                    Value.getValueFromName(encoded.charAt(0)),
-                    SpecialBoard.getCoordinates(encoded.substring(3, 5)));
-        }
-        if(encoded.charAt(3)=='-' &&
-                "abcdefgh".indexOf(encoded.charAt(5)) == -1) {  // check for swap
-            PlayBoard[] constellationBefore = new PlayBoard[3];
-            PlayBoard[] constellationAfter = new PlayBoard[3];
+        if (moveString.startsWith("O-O")){  // castle
+            pieceNames = new Character[1];
+            boardNames = new Character[0];
+            squareNames = new String[0];
+            if (moveString.equals("O-O-O")) pieceNames[0] = 'Q';
+            else pieceNames[0] = 'K';
+        }else if (moveString.charAt(0) == '>'){  // drop
+            pieceNames = new Character[1];
+            boardNames = new Character[0];
+            squareNames = new String[1];
+            pieceNames[0] = moveString.charAt(1);
+        }else {
 
-            for (int i = 0; i < 3; i++) {
-                constellationBefore[i] = getBoard(encoded.charAt(8 + i));
-                constellationAfter[i] = getBoard(encoded.charAt(12 + i));
+            int startOfConstellation = moveString.indexOf('_');
+            if (moveString.charAt(startOfConstellation-2) == '='){
+                promotion = moveString.charAt(startOfConstellation-1);
             }
-            return new Swap(
-                    player,
-                    state,
-                    PlayBoard.getCoordinates(encoded.substring(1, 3)),
-                    constellationBefore,
-                    constellationAfter
-            );
-        }
-        int startOfConstellation = encoded.indexOf('_') + 1;
-        board = getBoard(encoded.charAt(startOfConstellation));
-        if(encoded.charAt(3) == 'x'){  // check for captures
-            if (encoded.length() == startOfConstellation+3){  //check for normal capture
-                return new Capture(
-                        player,
-                        state,
-                        board.getSquare(encoded.substring(1, 3)),
-                        board.getSquare(encoded.substring(4, 6)),
-                        getBoard(encoded.charAt(startOfConstellation+2))
-                );
+
+            if (moveString.charAt(3) == '-'){  // swap/translation
+                if ("12345678".charAt(moveString.charAt(5))==-1) { // swap
+                    squareNames = new String[1];
+                    if (moveString.charAt(5) == '_') {  // swap2
+                        pieceNames = new Character[2];
+                        boardNames = new Character[4];
+                        pieceNames[1] = moveString.charAt(4);
+                        boardNames[2] = moveString.charAt(startOfConstellation + 4);
+                        boardNames[3] = moveString.charAt(startOfConstellation + 5);
+                    } else {  // swap3
+                        pieceNames = new Character[3];
+                        boardNames = new Character[6];
+                        pieceNames[1] = moveString.charAt(4);
+                        pieceNames[2] = moveString.charAt(6);
+                        boardNames[2] = moveString.charAt(startOfConstellation + 3);
+                        boardNames[3] = moveString.charAt(startOfConstellation + 5);
+                        boardNames[4] = moveString.charAt(startOfConstellation + 6);
+                        boardNames[5] = moveString.charAt(startOfConstellation + 7);
+                    }
+                    boardNames[1] = moveString.charAt(startOfConstellation + 2);
+                } else{  // translation
+                    squareNames = new String[2];
+                    boardNames = new Character[2];
+                    pieceNames = new Character[1];
+                    squareNames[1] = moveString.substring(4, 6);
+                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
+                }
+                pieceNames[0] = moveString.charAt(0);
+                squareNames[0] = moveString.substring(1, 3);
+            } else if (moveString.charAt(3)=='x'){  // capture/steal
+                squareNames = new String[2];
+                squareNames[1] = moveString.substring(5, 7);
+                pieceNames = new Character[2];
+                pieceNames[0] = moveString.charAt(1);
+                pieceNames[0] = moveString.charAt(4);
+                if (moveString.charAt(startOfConstellation)=='C') {  // steal
+                    boardNames = new Character[3];
+                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
+                    boardNames[2] = moveString.charAt(startOfConstellation + 5);
+                }else{  // capture
+                    boardNames = new Character[2];
+                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
+                }
+            } else {  // en passant
+                pieceNames = new Character[0];
+                boardNames = new Character[2];
+                squareNames = new String[2];
+                squareNames[1] = moveString.substring(4, 6);
+                boardNames[1] = moveString.charAt(startOfConstellation + 3);
             }
-            if (encoded.length() == startOfConstellation+5){  // check for steal
-                return new Steal(
-                        player,
-                        state,
-                        PlayBoard.getCoordinates(encoded.substring(1, 3)),
-                        PlayBoard.getCoordinates(encoded.substring(5, 7)),
-                        getBoard(encoded.charAt(startOfConstellation+2)),
-                        getBoard(encoded.charAt(startOfConstellation+4))
-                );
-            }
+            boardNames[0] = moveString.charAt(startOfConstellation + 1);
+            squareNames[0] = moveString.substring(2, 4);
         }
-        if (encoded.charAt(3) == 'p') {  // check for en passant
-            return new EnPassant(
-                    player,
-                    state,
-                    (StandardBoard) board,
-                    (StandardBoard) getBoard(encoded.charAt(startOfConstellation+2)),
-                    "abcdefgh".indexOf(encoded.charAt(4))
-            );
-        }
-        if (encoded.charAt(3) == '-'){
-            return new Translate(
-                    player,
-                    state,
-                    board.getSquare(encoded.substring(1, 3)),
-                    board.getSquare(encoded.substring(4, 6)),
-                    getBoard(encoded.charAt(startOfConstellation+2))
-            );
-        }
-        return null;
+        move = new Move(
+                state,
+                promotion,
+                pieceNames,
+                boardNames,
+                squareNames
+        );
+        return move;
     }
 }
