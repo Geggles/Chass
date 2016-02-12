@@ -7,11 +7,12 @@ public class Steal extends Move{
     public final PlayBoard destinationBoardOpponent;
 
     public Steal(Color player,
+                 State state,
                  int[] sourceCoordinates,
                  int[] destinationCoordinates,
                  PlayBoard destinationBoardPlayer,
                  PlayBoard destinationBoardOpponent){
-        super(player);
+        super(player, state);
         this.sourceCoordinates = sourceCoordinates;
         this.destinationCoordinates = destinationCoordinates;
         this.destinationBoardPlayer = destinationBoardPlayer;
