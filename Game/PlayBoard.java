@@ -35,7 +35,7 @@ public abstract class PlayBoard extends Board{
                 square = new Square(currentColor, this);
                 coordinate = new int[] {row, column};
                 addSquareAt(coordinate, square);
-                currentColor = Color.oppositeColor(currentColor);
+                currentColor = currentColor.opposite();
             }
         }
     }

@@ -94,6 +94,6 @@ public class StandardBoard extends PlayBoard {
                 break;
             }
         }
-        return isUnderAttack(kingSquare, Color.oppositeColor(color));
+        return isUnderAttack(kingSquare, color.opposite());
     }
 }
