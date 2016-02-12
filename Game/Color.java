@@ -3,8 +3,8 @@ package Game;
 public enum Color {
     BLACK,
     WHITE;
-    static Color oppositeColor(Color color){
-        if (color == WHITE) return BLACK;
+    public Color opposite(){
+        if (this == WHITE) return BLACK;
         return WHITE;
     }
 }
