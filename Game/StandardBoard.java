@@ -67,7 +67,7 @@ public class StandardBoard extends Board {
         Piece piece = board.getPiece(square);
         if (piece == null || piece.getColor() == board.color) return false;
         for (Piece p :
-                board.getAllPieces()) {
+                board.getPieces()) {
             if (p.value == Value.KING && p.getColor() != piece.getColor()) {
                 Square kingSquare = board.getSquare(p);
                 board.removePiece(piece);
@@ -88,7 +88,7 @@ public class StandardBoard extends Board {
     public boolean check(){
         Square kingSquare = null;
         for (Piece piece :
-                getAllPieces()) {
+                getPieces()) {
             if (piece.value==Value.KING){
                 kingSquare = getSquare(piece);
                 break;
