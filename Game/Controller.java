@@ -11,8 +11,8 @@ public class Controller {
     private StandardBoard alpha;
     private StandardBoard beta;
     private SpecialBoard gamma;
-    private HashMap<Color, Prison> prisons;
-    private HashMap<Color, Airfield> airfields;
+    private HashMap<Color, PieceCollection> prisons;
+    private HashMap<Color, PieceCollection> airfields;
     private Color turnPlayer = Color.WHITE;
     private LinkedList<String> moves;
     private int currentPly = 0;
@@ -22,11 +22,11 @@ public class Controller {
         beta = new StandardBoard(Color.BLACK);
         gamma = new SpecialBoard();
         prisons = new HashMap<>(2);
-        prisons.put(Color.WHITE, new Prison());
-        prisons.put(Color.BLACK, new Prison());
+        prisons.put(Color.WHITE, new PieceCollection());
+        prisons.put(Color.BLACK, new PieceCollection());
         airfields = new HashMap<>(2);
-        airfields.put(Color.WHITE, new Airfield());
-        airfields.put(Color.BLACK, new Airfield());
+        airfields.put(Color.WHITE, new PieceCollection());
+        airfields.put(Color.BLACK, new PieceCollection());
     }
 
     public void newGame(){
@@ -56,6 +56,7 @@ public class Controller {
         }else if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 1){  // drop
+            getAirfield(turnPlayer);
 
         }else if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 0 &&
@@ -105,11 +106,11 @@ public class Controller {
         return null;
     }
 
-    public Prison getPrison(Color color){
+    public PieceCollection getPrison(Color color){
         return prisons.get(color);
     }
 
-    public Airfield getAirfield(Color color){
+    public PieceCollection getAirfield(Color color){
         return airfields.get(color);
     }
 
