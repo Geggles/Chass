@@ -233,6 +233,10 @@ public abstract class Board {
         setPiece(getSquare(row, column), piece);
     }
 
+    public void setPiece(String squareName, Piece piece){
+        setPiece(getSquare(squareName), piece);
+    }
+
 
     public void removePiece(Square square){
         state.remove(square);
@@ -248,6 +252,10 @@ public abstract class Board {
 
     public void removePiece(int row, int column){
         removePiece(getSquare(row, column));
+    }
+
+    public void removePiece(String squareName){
+        removePiece(getSquare(squareName));
     }
 
 
@@ -269,6 +277,10 @@ public abstract class Board {
         return popPiece(getSquare(row, column));
     }
 
+    public Piece popPiece(String squareName){
+        return popPiece(getSquare(squareName));
+    }
+
 
     public Piece replacePiece(Square replace, Piece with){
         Piece popped = popPiece(replace);
@@ -286,6 +298,10 @@ public abstract class Board {
 
     public Piece replacePiece(int row, int column, Piece with){
         return replacePiece(getSquare(row, column), with);
+    }
+
+    public Piece replacePiece(String squareName, Piece with){
+        return replacePiece(getSquare(squareName), with);
     }
 
 
