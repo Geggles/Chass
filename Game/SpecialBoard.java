@@ -3,9 +3,9 @@ package Game;
 /**
  * Used for board Gamma
  * */
-public class SpecialBoard extends PlayBoard{
+public class SpecialBoard extends Board{
     public SpecialBoard() {
-        super("C", null);
+        super(Color.NONE);
     }
     public Square getSquare(int[] coordinates){
         int height = coordinates[0] % 8;

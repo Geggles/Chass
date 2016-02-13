@@ -2,9 +2,11 @@ package Game;
 
 public enum Color {
     BLACK,
-    WHITE;
+    WHITE,
+    NONE;
     public Color opposite(){
         if (this == WHITE) return BLACK;
-        return WHITE;
+        if (this == BLACK) return WHITE;
+        return NONE;
     }
 }

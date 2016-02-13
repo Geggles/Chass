@@ -16,89 +16,101 @@ public class Controller {
     private Color turnPlayer = Color.WHITE;
     private LinkedList<String> moves;
     private int currentPly = 0;
-    /**
-     * Specification for move types:
-     *   <All>:
-     *      state: Either null if move did not lead to a special game state or
-     *               '+' if move lead to a check or
-     *               '#' if move lead to a checkmate or
-     *               '@' if move lead to a stalemate
-     *      promotion: either null if not promotion happened or
-     *                   name of piece that has been promoted to
-     *   Castle:
-     *      pieceNames: Either 'Q' for castle queenside or 'K' for kingside
-     *      boardNames: Empty
-     *      squareNames: Empty
-     *   Drop:
-     *      pieceNames The dropped piece
-     *      boardNames: Empty
-     *      squareNames: square the piece was dropped to
-     *   Hostage Exchange:
-     *      pieceNames: The piece that was given to the opponent
-     *                  The piece that was dropped
-     *      boardNames: Empty
-     *      squareNames: Square the piece was dropped to
-     *   Swap:
-     *      pieceNames: First piece to be swapped
-     *                  Second piece to be swapped
-     *                  [Third piece to be swapped]
-     *      boardNames: Board first piece was on before swap
-     *                  Board second piece was on before swap
-     *                  [Board third piece was on before swap]
-     *                  Board first piece is on after swap
-     *                  Board second piece is on after swap
-     *                  [Board third piece is on after swap]
-     *      squareNames: Square the swap happens on
-     *   Capture:
-     *      pieceNames: Piece that has moved
-     *                  Piece that was captured
-     *      boardNames: Board the capture happened on
-     *                  Board the piece is on after capture
-     *      squareNames: Square the piece started out on
-     *                   Square the capture happened on
-     *   Steal:
-     *      pieceNames: Piece that has moved
-     *                  Piece that was captured
-     *      boardNames: C  // to distinguish it from a normal capture
-     *                  Board the own piece is on after the capture
-     *                  Board the captured piece is on after the capture
-     *      squareNames: Square the piece started out on
-     *                   Square the capture happened on
-     *   En Passant:
-     *      pieceNames: Empty
-     *      boardNames: Board the capture happened on
-     *                  Board the Piece is on after the capture
-     *      squareNames: Square the capturing pawn started out on
-     *                   Square the capturing pawn is on after the capture
-     *   Translate:
-     *      pieceNames: Piece that has moved
-     *      boardNames: Board the translation happened on
-     *                  Board the piece is on after translation
-     *      squareNames: Square the piece started out on
-     *                   Square the piece ended up on
-     */
+
     public Controller() {
         alpha = new StandardBoard(Color.WHITE);
         beta = new StandardBoard(Color.BLACK);
         gamma = new SpecialBoard();
         prisons = new HashMap<>(2);
-        prisons.put(Color.WHITE, new Prison(Color.WHITE));
-        prisons.put(Color.BLACK, new Prison(Color.BLACK));
+        prisons.put(Color.WHITE, new Prison());
+        prisons.put(Color.BLACK, new Prison());
         airfields = new HashMap<>(2);
-        airfields.put(Color.WHITE, new Airfield(Color.WHITE));
-        airfields.put(Color.BLACK, new Airfield(Color.BLACK));
+        airfields.put(Color.WHITE, new Airfield());
+        airfields.put(Color.BLACK, new Airfield());
     }
 
     public void newGame(){
     }
 
-    public PlayBoard getBoard(Character name){
+    public void doMove(Move move){
+        if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 0){  // castle:
+            StandardBoard board = (StandardBoard) getBoard(turnPlayer);
+            int row = 0;
+            if (turnPlayer == Color.BLACK) row = 7;
+            Square oldRookSquare = board.getSquare(row, 0);
+            Square oldKingSquare = board.getSquare(row, 5);
+            Square newRookSquare = board.getSquare(row, 3);
+            Square newKingSquare = board.getSquare(row, 2);
+            if (move.pieceNames[0] == 'K') {
+                oldRookSquare = board.getSquare(row, 7);
+                newRookSquare = board.getSquare(row, 5);
+                newKingSquare = board.getSquare(row, 6);
+            }
+            Piece king = board.popPiece(oldKingSquare);
+            Piece rook = board.popPiece(oldRookSquare);
+            board.setPiece(newKingSquare, king);
+            board.setPiece(newRookSquare, rook);
+
+        }else if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 1){  // drop
+
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 0 &&
+                move.squareNames.length == 1) {  // hostage exchange
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 4 &&
+                move.squareNames.length == 1) {  // swap2
+        }else if (move.pieceNames.length == 3 &&
+                move.boardNames.length == 6 &&
+                move.squareNames.length == 1) {  // swap3
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // capture
+        }else if (move.pieceNames.length == 2 &&
+                move.boardNames.length == 3 &&
+                move.squareNames.length == 2) {  // steal
+        }else if (move.pieceNames.length == 0 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // en passant
+        }else if (move.pieceNames.length == 1 &&
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 2) {  // translate
+        }
+    }
+
+    private void promote(Square square, Value value){
+        StandardBoard board = (StandardBoard) square.board;
+        board.removePiece(square);
+        board.setPiece(square, new Piece(value, turnPlayer));
+    }
+
+    public Board getBoard(Character name){
         switch (name){
             case 'A': return  alpha;
             case 'B': return  beta;
             case 'C': return  gamma;
         }
         return null;
+    }
+
+    public Board getBoard(Color color){
+        switch (color){
+            case WHITE: return  alpha;
+            case BLACK: return  beta;
+            case NONE: return  gamma;
+        }
+        return null;
+    }
+
+    public Prison getPrison(Color color){
+        return prisons.get(color);
+    }
+
+    public Airfield getAirfield(Color color){
+        return airfields.get(color);
     }
 
     private void removeMovesAfter(int turn){

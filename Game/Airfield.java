@@ -1,11 +1,6 @@
 package Game;
 
-public class Airfield extends ExtraBoard{
-    public Airfield(Color color) {
-        super(color);
-    }
-
-    public void setupSquares(){
-
+public class Airfield{
+    public Airfield(){
     }
 }

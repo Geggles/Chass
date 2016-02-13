@@ -5,7 +5,7 @@ import java.util.HashMap;
 /**
  * Used for boards Alpha and Beta
  * */
-public class StandardBoard extends PlayBoard {
+public class StandardBoard extends Board {
     private static final HashMap<Color, String> names;
     static
     {
@@ -17,7 +17,7 @@ public class StandardBoard extends PlayBoard {
      * Game.Color corresponds to the color of the army that starts out on the board
      */
     public StandardBoard(Color color) {
-        super(names.get(color), color);
+        super(color);
         setupPieces();
     }
 
@@ -38,7 +38,7 @@ public class StandardBoard extends PlayBoard {
         }
 
         for (int column = 0; column < 8; column++) {
-            setPiece(new int[]{row, column}, new Piece(Value.PAWN));
+            setPiece(new int[]{row, column}, new Piece(Value.PAWN, color));
         }
 
         //other pieces
@@ -48,14 +48,14 @@ public class StandardBoard extends PlayBoard {
             row = 0;
         }
 
-        setPiece(new int[]{row, 0}, new Piece(Value.ROOK));
-        setPiece(new int[]{row, 1}, new Piece(Value.KNIGHT));
-        setPiece(new int[]{row, 2}, new Piece(Value.BISHOP));
-        setPiece(new int[]{row, 3}, new Piece(Value.QUEEN));
-        setPiece(new int[]{row, 4}, new Piece(Value.KING));
-        setPiece(new int[]{row, 5}, new Piece(Value.BISHOP));
-        setPiece(new int[]{row, 6}, new Piece(Value.KNIGHT));
-        setPiece(new int[]{row, 7}, new Piece(Value.ROOK));
+        setPiece(new int[]{row, 0}, new Piece(Value.ROOK, color));
+        setPiece(new int[]{row, 1}, new Piece(Value.KNIGHT, color));
+        setPiece(new int[]{row, 2}, new Piece(Value.BISHOP, color));
+        setPiece(new int[]{row, 3}, new Piece(Value.QUEEN, color));
+        setPiece(new int[]{row, 4}, new Piece(Value.KING, color));
+        setPiece(new int[]{row, 5}, new Piece(Value.BISHOP, color));
+        setPiece(new int[]{row, 6}, new Piece(Value.KNIGHT, color));
+        setPiece(new int[]{row, 7}, new Piece(Value.ROOK, color));
 
     }
 
@@ -65,13 +65,13 @@ public class StandardBoard extends PlayBoard {
     public boolean isPinned(Square square) {
         StandardBoard board = (StandardBoard) square.board;
         Piece piece = board.getPiece(square);
-        if (piece == null || piece.color == board.color) return false;
+        if (piece == null || piece.getColor() == board.color) return false;
         for (Piece p :
                 board.getAllPieces()) {
-            if (p.value == Value.KING && p.color != piece.color) {
+            if (p.value == Value.KING && p.getColor() != piece.getColor()) {
                 Square kingSquare = board.getSquare(p);
                 board.removePiece(piece);
-                boolean result = board.isUnderAttack(kingSquare, piece.color);
+                boolean result = board.isUnderAttack(kingSquare, piece.getColor());
                 board.setPiece(square, piece);
                 return result;
             }
