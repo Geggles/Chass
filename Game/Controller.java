@@ -32,6 +32,9 @@ public class Controller {
     public void newGame(){
     }
 
+    /**
+     * Does no checking whatsoever; simply does the move. Duh. Check for validity elsewhere.
+     * */
     public void doMove(Move move){
         if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
@@ -56,29 +59,110 @@ public class Controller {
         }else if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 1){  // drop
-            getAirfield(turnPlayer);
+            Value value = Value.getValueFromName(move.pieceNames[0]);
+            Piece piece = new Piece(value, turnPlayer);
+            piece.prohibitBoost();
+            piece.prohibitCastling();
+            piece.prohibitPromotion();
+            getAirfield(turnPlayer).removePiece(value);
+            gamma.setPiece(Board.getCoordinates(move.squareNames[0]), piece);
 
         }else if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 1) {  // hostage exchange
+            Value exchangeValue = Value.getValueFromName(move.pieceNames[0]);
+            Value dropValue = Value.getValueFromName(move.pieceNames[1]);
+            Piece piece = new Piece(dropValue, turnPlayer);
+            piece.prohibitBoost();
+            piece.prohibitCastling();
+            piece.prohibitPromotion();
+            getPrison(turnPlayer).removePiece(exchangeValue);
+            getAirfield(turnPlayer.opposite()).addPiece(exchangeValue);
+            getPrison(turnPlayer.opposite()).removePiece(dropValue);
+            gamma.setPiece(Board.getCoordinates(move.squareNames[0]), piece);
+
         }else if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 4 &&
                 move.squareNames.length == 1) {  // swap2
+            Board sourceBoard1 = getBoard(move.boardNames[0]);
+            Board sourceBoard2 = getBoard(move.boardNames[1]);
+            Board destinationBoard1 = getBoard(move.boardNames[2]);
+            Board destinationBoard2 = getBoard(move.boardNames[3]);
+            String squareName = move.squareNames[0];
+            Piece piece1 = sourceBoard1.popPiece(squareName);
+            Piece piece2 = sourceBoard2.popPiece(squareName);
+            destinationBoard1.setPiece(squareName, piece1);
+            destinationBoard2.setPiece(squareName, piece2);
+
         }else if (move.pieceNames.length == 3 &&
                 move.boardNames.length == 6 &&
                 move.squareNames.length == 1) {  // swap3
+            Board sourceBoard1 = getBoard(move.boardNames[0]);
+            Board sourceBoard2 = getBoard(move.boardNames[1]);
+            Board sourceBoard3 = getBoard(move.boardNames[2]);
+            Board destinationBoard1 = getBoard(move.boardNames[3]);
+            Board destinationBoard2 = getBoard(move.boardNames[4]);
+            Board destinationBoard3 = getBoard(move.boardNames[5]);
+            String squareName = move.squareNames[0];
+            Piece piece1 = sourceBoard1.popPiece(squareName);
+            Piece piece2 = sourceBoard2.popPiece(squareName);
+            Piece piece3 = sourceBoard3.popPiece(squareName);
+            destinationBoard1.setPiece(squareName, piece1);
+            destinationBoard2.setPiece(squareName, piece2);
+            destinationBoard3.setPiece(squareName, piece3);
+
         }else if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 2 &&
                 move.squareNames.length == 2) {  // capture
+            Board sourceBoard = getBoard(move.boardNames[0]);
+            Board destinationBoard = getBoard(move.boardNames[1]);
+            Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
+            Piece destinationPiece = sourceBoard.popPiece(move.squareNames[1]);
+            destinationBoard.setPiece(move.squareNames[1], sourcePiece);
+            getPrison(turnPlayer).addPiece(destinationPiece.value);
+            if (move.pieceNames[0] == 'P' &&
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0 &&
+                    sourcePiece.hasPromotionAbility()) {
+                promote(sourceBoard.getSquare(move.squareNames[1]),
+                        Value.getValueFromName(move.promotion));
+            }
+
         }else if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 3 &&
                 move.squareNames.length == 2) {  // steal
+            Board destinationPlayer = getBoard(move.boardNames[1]);
+            Board destinationOpponent = getBoard(move.boardNames[2]);
+            Piece sourcePiece = gamma.popPiece(move.squareNames[0]);
+            Piece destinationPiece = gamma.popPiece(move.squareNames[1]);
+            destinationPlayer.setPiece(move.squareNames[1], sourcePiece);
+            destinationOpponent.setPiece(move.squareNames[1], destinationPiece);
+
         }else if (move.pieceNames.length == 0 &&
                 move.boardNames.length == 2 &&
                 move.squareNames.length == 2) {  // en passant
+            int pawnRow = 3;
+            if (turnPlayer == Color.BLACK) pawnRow = 4;
+            int destinationColumn = Board.getCoordinates(move.squareNames[1])[1];
+            Board sourceBoard = getBoard(move.boardNames[0]);
+            Board destinationBoard = getBoard(move.boardNames[1]);
+            Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
+            sourceBoard.removePiece(pawnRow, destinationColumn);  // capture
+            destinationBoard.setPiece(move.squareNames[1], sourcePiece);
+            getPrison(turnPlayer).addPiece(Value.PAWN);
+
         }else if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 2 &&
                 move.squareNames.length == 2) {  // translate
+            Board sourceBoard = getBoard(move.boardNames[0]);
+            Board destinationBoard = getBoard(move.boardNames[1]);
+            Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
+            destinationBoard.setPiece(move.squareNames[1], sourcePiece);
+            if (move.pieceNames[0] == 'P' &&
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0 &&
+                    sourcePiece.hasPromotionAbility()){
+                promote(sourceBoard.getSquare(move.squareNames[1]),
+                        Value.getValueFromName(move.promotion));
+            }
         }
     }
 
