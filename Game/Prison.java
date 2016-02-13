@@ -1,6 +1,6 @@
 package Game;
 
-public class Prison{
+public class Prison extends PieceCollection{
     public Prison(){
 
     }
