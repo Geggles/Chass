@@ -4,6 +4,10 @@ public class Piece {
     private Color color;
     private boolean canNullMove = true;
     private boolean canCastle = true;
+    // pawns can not promote anymore once they have been to prison
+    private boolean canPromote = true;
+    // pawns can move 2 squares only if they have not moved at all yet
+    private boolean canBoost = true;
     public final Value value;
 
     public Piece(Value value, Color color){
@@ -26,7 +30,7 @@ public class Piece {
         return canCastle;
     }
 
-    public void cannotCastleAnymore(){
+    public void prohibitCastling(){
         canCastle = false;
     }
 
@@ -36,5 +40,21 @@ public class Piece {
 
     public void setNullMoveAbility(boolean value){
         canNullMove = value;
+    }
+
+    public boolean getPromotionAbility(){
+        return canPromote;
+    }
+
+    public void prohibitPromotion(){
+        canPromote = false;
+    }
+
+    public boolean getBoostAbility(){
+        return canPromote;
+    }
+
+    public void prohibitBoost(){
+        canPromote = false;
     }
 }
