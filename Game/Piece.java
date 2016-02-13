@@ -26,7 +26,7 @@ public class Piece {
         color = color.opposite();
     }
 
-    public boolean getCastleAbility(){
+    public boolean hasCastleAbility(){
         return canCastle;
     }
 
@@ -34,7 +34,7 @@ public class Piece {
         canCastle = false;
     }
 
-    public boolean getNullMoveAbility(){
+    public boolean hasNullMoveAbility(){
         return canNullMove;
     }
 
@@ -42,7 +42,7 @@ public class Piece {
         canNullMove = value;
     }
 
-    public boolean getPromotionAbility(){
+    public boolean hasPromotionAbility(){
         return canPromote;
     }
 
@@ -50,7 +50,7 @@ public class Piece {
         canPromote = false;
     }
 
-    public boolean getBoostAbility(){
+    public boolean hasBoostAbility(){
         return canPromote;
     }
 
