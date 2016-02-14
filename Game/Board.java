@@ -3,6 +3,7 @@ package Game;
 import com.google.common.collect.HashBiMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
@@ -347,15 +348,12 @@ public abstract class Board {
     }
 
 
-    public ArrayList<Piece> getAllPieces() {
-        ArrayList<Piece> res = new ArrayList<>();
-        state.forEach((square, piece) -> res.add(piece));
-        return res;
+    public Piece[] getPieces() {
+        return state.inverse().keySet().toArray(new Piece[0]);
     }
 
-    public ArrayList<Piece> getPieces(Value value){
-        ArrayList<Piece> result = new ArrayList<>(2);
-        getAllPieces().forEach(piece -> {if (piece.value == value) result.add(piece);});
-        return result;
+    public Piece[] getPieces(Value value){
+        return (Arrays.stream(getPieces()).filter(piece -> piece.value == value)
+                .toArray(size -> new Piece[size]));
     }
 }
