@@ -1,3 +1,5 @@
+// TODO: 15-Feb-16 add function that takes a piece and returns all valid squares it can move to
+
 package Game;
 
 import com.google.common.collect.HashBiMap;
