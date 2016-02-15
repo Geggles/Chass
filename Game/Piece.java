@@ -1,15 +1,19 @@
 package Game;
 
 public class Piece {
-    public Color color;
-    public boolean canNullMove = true;
-    public boolean canCastle = true;
+    private Color color;
     public final Value value;
 
-    public Piece(Value value){
+    public Piece(Value value, Color color){
         this.value = value;
-        if (value == Value.KING){
-            this.canNullMove = false;
-        }
+        this.color = color;
+    }
+
+    public Color getColor(){
+        return color;
+    }
+
+    public void switchColor(){
+        color = color.opposite();
     }
 }
