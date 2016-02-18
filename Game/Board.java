@@ -43,16 +43,65 @@ public abstract class Board {
         }
     }
 
-    protected void initializeSquares(int size){
-        squares = HashBiMap.create(size);
-    }
-
-    protected void addSquareAt(int[] coordinates, Square square){
+    private void addSquareAt(int[] coordinates, Square square){
         squares.inverse().put(coordinates, square);
     }
 
-    protected void addCoordinatesOf(int[] coordinates, Square square){
-        squares.put(square, coordinates);
+    /**
+     * @param piece
+     * @return Array of squares that the given piece can move to. Regardless of validity of move.
+     */
+    public Square[] canGoTo(Piece piece){;
+        ArrayList<Square> result = new ArrayList<>(0);
+        Square square = getSquare(piece);
+        Color player = piece.getColor();
+        int[] coordinates = getCoordinates(square);
+        int row = coordinates[0];
+        int column = coordinates[1];
+        switch (piece.value){
+            case PAWN:{
+                int direction = 1;
+                int startRow = 1;
+                if (player==Color.BLACK) {
+                    direction = -1;
+                    startRow = 6;
+                }
+                if (row == startRow) result.add(getSquare(row+2*direction, column));
+                row += direction;
+                result.add(getSquare(row, column));
+                break;
+            }
+            case KNIGHT:{
+                result.add(getSquare(row + 1, column + 2));
+                result.add(getSquare(row + 1, column - 2));
+                result.add(getSquare(row + 2, column + 1));
+                result.add(getSquare(row + 2, column - 1));
+                result.add(getSquare(row - 1, column + 2));
+                result.add(getSquare(row - 1, column - 2));
+                result.add(getSquare(row - 2, column + 1));
+                result.add(getSquare(row - 2, column - 1));
+                break;
+            }
+            case KING:{
+                result.add(getSquare(row + 1, column - 1));
+                result.add(getSquare(row + 1, column));
+                result.add(getSquare(row + 1, column + 1));
+                result.add(getSquare(row, column - 1));
+                result.add(getSquare(row, column + 1));
+                result.add(getSquare(row - 1, column - 1));
+                result.add(getSquare(row - 1, column));
+                result.add(getSquare(row - 1, column + 1));
+                break;
+            }
+            default:{
+                return attacksSquares(piece);
+            }
+        }
+        return result.toArray(new Square[result.size()]);
+    }
+
+    public Square[] attacksSquares(Piece piece){
+
     }
 
     public boolean isUnderAttack(Square square, Color color) {
