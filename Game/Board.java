@@ -6,6 +6,7 @@ import com.google.common.collect.HashBiMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 public abstract class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
@@ -51,7 +52,29 @@ public abstract class Board {
      * @param piece
      * @return Array of squares that the given piece can move to. Regardless of validity of move.
      */
-    public Square[] canGoTo(Piece piece){;
+    public Square[] canGoTo(Piece piece){
+        Square square = getSquare(piece);
+        Color player = piece.getColor();
+        int[] coordinates = getCoordinates(square);
+        int row = coordinates[0];
+        int column = coordinates[1];
+        if (piece.value == Value.PAWN) {
+            int direction = 1;
+            int startRow = 1;
+            if (player==Color.BLACK) {
+                direction = -1;
+                startRow = 6;
+            }
+            if (row == startRow){
+                return new Square[]{ getSquare(row+2*direction, column),
+                        getSquare(row + direction, column)};
+            }
+            return attacksSquares(piece);
+        }
+        return null;
+    }
+
+    public Square[] attacksSquares(Piece piece){
         ArrayList<Square> result = new ArrayList<>(0);
         Square square = getSquare(piece);
         Color player = piece.getColor();
@@ -61,14 +84,10 @@ public abstract class Board {
         switch (piece.value){
             case PAWN:{
                 int direction = 1;
-                int startRow = 1;
-                if (player==Color.BLACK) {
-                    direction = -1;
-                    startRow = 6;
-                }
-                if (row == startRow) result.add(getSquare(row+2*direction, column));
+                if (player==Color.BLACK) direction = -1;
                 row += direction;
-                result.add(getSquare(row, column));
+                result.add(getSquare(row, column+1));
+                result.add(getSquare(row, column-1));
                 break;
             }
             case KNIGHT:{
@@ -93,15 +112,104 @@ public abstract class Board {
                 result.add(getSquare(row - 1, column + 1));
                 break;
             }
-            default:{
-                return attacksSquares(piece);
+            default: {
+                int searchRow = row;
+                int searchColumn = column;
+                switch (piece.value){
+                    case BISHOP: {
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchColumn != column && ++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchColumn != column && --searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column && ++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column && --searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        break;
+                    }
+                    case ROOK: {
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        break;
+                    }
+                    case QUEEN: {
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchColumn != column && ++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchColumn != column && --searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column && ++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column && --searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (++searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchRow != row) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        searchRow = row;
+                        searchColumn = column;
+                        while (--searchColumn != column) {
+                            result.add(getSquare(searchRow, searchColumn));
+                        }
+                        break;
+                    }
+                }
+                return result.toArray(new Square[result.size()]);
             }
         }
         return result.toArray(new Square[result.size()]);
-    }
-
-    public Square[] attacksSquares(Piece piece){
-
     }
 
     public boolean isUnderAttack(Square square, Color color) {
