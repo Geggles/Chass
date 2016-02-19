@@ -63,6 +63,12 @@ public class Controller {
         return null;
     }
 
+    public boolean inCheck(Color player){
+        Board board = getBoard(player);
+        Square kingSquare = board.getSquare(board.getPieces(Value.KING)[0]);
+        return board.isUnderAttack(kingSquare, player.opposite());
+    }
+
     /**
      * Return side that player can castle to (King/Queen/None)
      * */
@@ -398,6 +404,13 @@ public class Controller {
         removeMovesAfter(currentPly);
         moves.add(moveString);
         incrementPly();
+    }
+
+    private void rewindMove(String moveString){
+        Move move = decodeMove(moveString);
+        decrementPly();
+        removeMovesAfter(currentPly);
+        undoMove(move);
     }
 
     private boolean incrementPly(){
