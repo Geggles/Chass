@@ -1,3 +1,5 @@
+import com.google.common.base.Joiner;
+
 /**
  * Starts the Game
  */
@@ -12,6 +14,7 @@ public class Main {
         }else{
             controller = new ConsoleController();
         }
-        controller.startGame();
+        controller.startGame();  // give control to controller
+
     }
 }

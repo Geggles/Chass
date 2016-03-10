@@ -9,8 +9,8 @@ public class PieceCollection {
 
     }
 
-    public ArrayList<Value> getPieces(){
-        return pieces;
+    public Value[] getPieces(){
+        return pieces.toArray(new Value[pieces.size()]);
     }
 
     public int countPieces(Value value){
@@ -22,18 +22,18 @@ public class PieceCollection {
     }
 
     public boolean removePiece(Value value){
-        boolean success = getPieces().remove(value);
+        boolean success = pieces.remove(value);
         sortPieces();
         return success;
     }
 
     public void addPiece(Value value){
-        getPieces().add(value);
+        pieces.add(value);
         sortPieces();
     }
 
     private void sortPieces(){
-        Collections.sort(getPieces());
+        Collections.sort(pieces);
     }
 
 }
