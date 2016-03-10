@@ -10,19 +10,19 @@ import java.util.LinkedList;
  * */
 
 public class Controller {
-    private StandardBoard alpha;
-    private StandardBoard beta;
-    private SpecialBoard gamma;
+    private Board alpha;
+    private Board beta;
+    private Board gamma;
     private HashMap<Color, PieceCollection> prisons;
     private HashMap<Color, PieceCollection> airfields;
     private Color turnPlayer = Color.WHITE;
-    private LinkedList<String> moves;
+    private LinkedList<String> moves = new LinkedList<>();
     private int currentPly = 0;
 
     public Controller() {
-        alpha = new StandardBoard(Color.WHITE);
-        beta = new StandardBoard(Color.BLACK);
-        gamma = new SpecialBoard();
+        alpha = new Board(Color.WHITE);
+        beta = new Board(Color.BLACK);
+        gamma = new Board(Color.NONE);
         prisons = new HashMap<>(2);
         prisons.put(Color.WHITE, new PieceCollection());
         prisons.put(Color.BLACK, new PieceCollection());
@@ -31,7 +31,12 @@ public class Controller {
         airfields.put(Color.BLACK, new PieceCollection());
     }
 
-    public void newGame(){
+    public Color getCurrentPlayer(){
+        return turnPlayer;
+    }
+
+    public Move getLatestMove(){
+        return decodeMove(moves.getLast());
     }
 
     public String[] getMoves(Color player){
@@ -65,8 +70,11 @@ public class Controller {
 
     public boolean inCheck(Color player){
         Board board = getBoard(player);
-        Square kingSquare = board.getSquare(board.getPieces(Value.KING)[0]);
-        return board.isUnderAttack(kingSquare, player.opposite());
+        return board.check();
+    }
+
+    public boolean inCheck(){
+        return inCheck(turnPlayer);
     }
 
     /**
@@ -118,11 +126,15 @@ public class Controller {
         return result.toArray(new Value[result.size()]);
     }
 
+    public Value[] canCastleTo(){
+        return canCastleTo(turnPlayer);
+    }
+
     public void undoMove(Move move){
         if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 0){  // castle:
-            StandardBoard board = (StandardBoard) getBoard(turnPlayer);
+            Board board = getBoard(turnPlayer);
             int row = 0;
             if (turnPlayer == Color.BLACK) row = 7;
             Square newRookSquare = board.getSquare(row, 0);
@@ -196,7 +208,7 @@ public class Controller {
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             getPrison(turnPlayer).removePiece(destinationPiece.value);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
                 destinationBoard.setPiece(move.squareNames[1], new Piece(Value.PAWN, turnPlayer));
             }
 
@@ -215,7 +227,7 @@ public class Controller {
                 move.squareNames.length == 2) {  // en passant
             int pawnRow = 3;
             if (turnPlayer == Color.BLACK) pawnRow = 4;
-            int destinationColumn = Board.getCoordinates(move.squareNames[1])[1];
+            int destinationColumn = Board.getCoordinates(move.squareNames[1]).get(1);
             Board sourceBoard = getBoard(move.boardNames[1]);
             Board destinationBoard = getBoard(move.boardNames[0]);
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
@@ -231,7 +243,7 @@ public class Controller {
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[1]);
             destinationBoard.setPiece(move.squareNames[0], sourcePiece);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
                 destinationBoard.setPiece(move.squareNames[1], new Piece(Value.PAWN, turnPlayer));
             }
         }
@@ -244,11 +256,11 @@ public class Controller {
         if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 0){  // castle:
-            StandardBoard board = (StandardBoard) getBoard(turnPlayer);
+            Board board = getBoard(turnPlayer);
             int row = 0;
             if (turnPlayer == Color.BLACK) row = 7;
             Square oldRookSquare = board.getSquare(row, 0);
-            Square oldKingSquare = board.getSquare(row, 5);
+            Square oldKingSquare = board.getSquare(row, 4);
             Square newRookSquare = board.getSquare(row, 3);
             Square newKingSquare = board.getSquare(row, 2);
             if (move.pieceNames[0] == 'K') {
@@ -320,7 +332,7 @@ public class Controller {
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             getPrison(turnPlayer).addPiece(destinationPiece.value);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
                 promote(sourceBoard.getSquare(move.squareNames[1]),
                         Value.getValueFromName(move.promotion));
             }
@@ -340,7 +352,7 @@ public class Controller {
                 move.squareNames.length == 2) {  // en passant
             int pawnRow = 3;
             if (turnPlayer == Color.BLACK) pawnRow = 4;
-            int destinationColumn = Board.getCoordinates(move.squareNames[1])[1];
+            int destinationColumn = Board.getCoordinates(move.squareNames[1]).get(1);
             Board sourceBoard = getBoard(move.boardNames[0]);
             Board destinationBoard = getBoard(move.boardNames[1]);
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
@@ -356,15 +368,16 @@ public class Controller {
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0){
+                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0){
                 promote(sourceBoard.getSquare(move.squareNames[1]),
                         Value.getValueFromName(move.promotion));
             }
         }
+        addMove(move);
     }
 
     private void promote(Square square, Value value){
-        StandardBoard board = (StandardBoard) square.board;
+        Board board = square.board;
         board.removePiece(square);
         board.setPiece(square, new Piece(value, turnPlayer));
     }
@@ -396,7 +409,7 @@ public class Controller {
     }
 
     private void removeMovesAfter(int turn){
-        moves.subList(moves.size() - turn, moves.size()).clear();
+        moves.subList(turn, moves.size()).clear();
     }
 
     private void addMove(Move move){
@@ -414,8 +427,9 @@ public class Controller {
     }
 
     private boolean incrementPly(){
-        if (currentPly < moves.size()-1){
+        if (currentPly < moves.size()){
             currentPly ++;
+            turnPlayer = turnPlayer.opposite();
             return true;
         }
         return false;
@@ -424,6 +438,7 @@ public class Controller {
     private boolean decrementPly(){
         if (currentPly > 0){
             currentPly --;
+            turnPlayer = turnPlayer.opposite();
             return true;
         }
         return false;
@@ -437,7 +452,7 @@ public class Controller {
         return moves.toArray(new String[moves.size()]);
     }
 
-    private String encodeMove(Move move){
+    public String encodeMove(Move move){
         String moveString = "INVALID";
         String promotionString = "";
         if (move.promotion!=null) promotionString = "=" + promotionString;
@@ -528,7 +543,7 @@ public class Controller {
         }else if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 2 &&
                 move.squareNames.length == 2) {  // translate
-            moveString = String.format("%s%s-%s>%s>%s%s",
+            moveString = String.format("%s%s-%s_%s>%s%s",
                     move.pieceNames[0],
                     move.squareNames[0],
                     move.squareNames[1],
@@ -539,7 +554,7 @@ public class Controller {
         return moveString;
     }
 
-    private Move decodeMove(String moveString){
+    public Move decodeMove(String moveString){
         Move move;
         Character state = null;
         Character promotion = null;
@@ -574,7 +589,7 @@ public class Controller {
             }
 
             if (moveString.charAt(3) == '-'){  // swap/translation
-                if ("12345678".charAt(moveString.charAt(5))==-1) { // swap
+                if ("012345678".charAt(Character.getNumericValue(moveString.charAt(5)))==-1) { // swap
                     squareNames = new String[1];
                     if (moveString.charAt(5) == '_') {  // swap2
                         pieceNames = new Character[2];
@@ -622,7 +637,7 @@ public class Controller {
                 }
             }
             boardNames[0] = moveString.charAt(startOfConstellation + 1);
-            squareNames[0] = moveString.substring(2, 4);
+            squareNames[0] = moveString.substring(1, 3);
         }
         move = new Move(
                 state,

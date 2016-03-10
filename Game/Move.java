@@ -61,12 +61,12 @@ package Game;
  *                   Square the piece ended up on
  */
 public class Move {
-    final Character state;
-    final Character promotion;
-    final Character[] pieceNames;
-    final Character[] boardNames;
-    final String[] squareNames;
-    Move(Character state,
+    final public Character state;
+    final public Character promotion;
+    final public Character[] pieceNames;
+    final public Character[] boardNames;
+    final public String[] squareNames;
+    public Move(Character state,
          Character promotion,
          Character[] pieceNames,
          Character[] boardNames,

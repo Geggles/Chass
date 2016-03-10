@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Persistence {
-    private static Path saveDirectory;
+    private static Path saveDirectory = Paths.get("");
 
     public static Path getSaveDirectory() {
         return saveDirectory;
@@ -72,6 +72,7 @@ public class Persistence {
         while (Files.exists(path)){
             path = Paths.get(path.toString()+"_"+Integer.toString(v++));
         }
+        System.out.println(path.toString());
         try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             lines.stream().forEachOrdered(l -> {
                 try {

@@ -1,20 +1,27 @@
 package Game;
 
+import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
-    private HashBiMap<Square, int[]> squares = HashBiMap.create(64);
-    private static final HashBiMap<int[], String> squareNames = HashBiMap.create(64);
+    private HashBiMap<Square, List<Integer>> squares = HashBiMap.create(64);
+    private static final HashBiMap<List<Integer>, String> squareNames = HashBiMap.create(64);
 
     static {
         String names = "abcdefgh";
         for (int row = 0; row < 8; row++)
-            for (int column = 0; column < 8; column++)
-                squareNames.put(new int[]{row, column}, names.charAt(column) + Integer.toString(row + 1));
+            for (int column = 0; column < 8; column++) {
+                ArrayList<Integer> coordinates = new ArrayList<>();
+                coordinates.add(row);
+                coordinates.add(column);
+                squareNames.put(coordinates, names.charAt(column) + Integer.toString(row + 1));
+            }
     }
 
     public final Color color;
@@ -22,6 +29,9 @@ public class Board {
     public Board(Color color) {
         this.color = color;
         setupSquares();
+        if (color != Color.NONE) {
+            setupPieces();
+        }
     }
 
     private void setupSquares() {
@@ -31,8 +41,10 @@ public class Board {
         for (int row = 0; row < 8; row++)
             for (int column = 0; column < 8; column++) {
                 square = new Square(currentColor, this);
-                coordinate = new int[]{row, column};
-                addSquareAt(coordinate, square);
+                ArrayList<Integer> coordinates = new ArrayList<>();
+                coordinates.add(row);
+                coordinates.add(column);
+                addSquareAt(coordinates, square);
                 currentColor = currentColor.opposite();
             }
     }
@@ -41,31 +53,25 @@ public class Board {
         //pawns
         int row; // row that pawns start out on
 
-        if (color == Color.BLACK) {
-            row = 6;
-        } else {
-            row = 1;
-        }
+        row = 1;
+        if (color == Color.BLACK)row = 6;
 
         for (int column = 0; column < 8; column++) {
-            setPiece(new int[]{row, column}, new Piece(Value.PAWN, color));
+            setPiece(row, column, new Piece(Value.PAWN, color));
         }
 
         //other pieces
-        if (color == Color.BLACK) {
-            row = 7;
-        } else {
-            row = 0;
-        }
+        row = 0;
+        if (color == Color.BLACK)row = 7;
 
-        setPiece(new int[]{row, 0}, new Piece(Value.ROOK, color));
-        setPiece(new int[]{row, 1}, new Piece(Value.KNIGHT, color));
-        setPiece(new int[]{row, 2}, new Piece(Value.BISHOP, color));
-        setPiece(new int[]{row, 3}, new Piece(Value.QUEEN, color));
-        setPiece(new int[]{row, 4}, new Piece(Value.KING, color));
-        setPiece(new int[]{row, 5}, new Piece(Value.BISHOP, color));
-        setPiece(new int[]{row, 6}, new Piece(Value.KNIGHT, color));
-        setPiece(new int[]{row, 7}, new Piece(Value.ROOK, color));
+        setPiece(row, 0, new Piece(Value.ROOK, color));
+        setPiece(row, 1, new Piece(Value.KNIGHT, color));
+        setPiece(row, 2, new Piece(Value.BISHOP, color));
+        setPiece(row, 3, new Piece(Value.QUEEN, color));
+        setPiece(row, 4, new Piece(Value.KING, color));
+        setPiece(row, 5, new Piece(Value.BISHOP, color));
+        setPiece(row, 6, new Piece(Value.KNIGHT, color));
+        setPiece(row, 7, new Piece(Value.ROOK, color));
 
     }
 
@@ -91,18 +97,11 @@ public class Board {
      * Check whether king is in check
      * */
     public boolean check(){
-        Square kingSquare = null;
-        for (Piece piece :
-                getPieces()) {
-            if (piece.value==Value.KING){
-                kingSquare = getSquare(piece);
-                break;
-            }
-        }
+        Square kingSquare = getSquare(getPieces(Value.KING)[0]);
         return isUnderAttack(kingSquare, color.opposite());
     }
 
-    private void addSquareAt(int[] coordinates, Square square) {
+    private void addSquareAt(List<Integer> coordinates, Square square) {
         squares.inverse().put(coordinates, square);
     }
 
@@ -111,11 +110,13 @@ public class Board {
      * @return Array of squares that the given piece can move to. Regardless of validity of move.
      */
     public Square[] canGoTo(Piece piece) {
+        ArrayList<Square> result = new ArrayList<>(1);
+        Square testSquare;
         Square square = getSquare(piece);
         Color player = piece.getColor();
-        int[] coordinates = getCoordinates(square);
-        int row = coordinates[0];
-        int column = coordinates[1];
+        ArrayList<Integer> coordinates = (ArrayList<Integer>) getCoordinates(square);
+        int row = coordinates.get(0);
+        int column = coordinates.get(1);
         if (piece.value == Value.PAWN) {
             int direction = 1;
             int startRow = 1;
@@ -123,20 +124,46 @@ public class Board {
                 direction = -1;
                 startRow = 6;
             }
-            if (row == startRow)
-                return new Square[]{getSquare(row + 2 * direction, column), getSquare(row + direction, column)};
-            return attacksSquares(piece);
+            testSquare = getSquare(row + direction, column);
+            if (getPiece(testSquare) == null){
+                result.add(testSquare);
+                if (row == startRow){
+                    testSquare = getSquare(row + 2*direction, column);
+                    if(getPiece(testSquare) == null){
+                        result.add(testSquare);
+                    }
+                }
+            }
+        }else if (piece.value == Value.KING){
+            int baseRow = 0;
+            if (piece.getColor() == Color.BLACK) baseRow = 7;
+            if (row == baseRow && column == 4){
+                if (!check()){
+                    testSquare = getSquare(row, column-2);
+                    if (getPiece(testSquare) == null &&
+                            !isUnderAttack(testSquare, color.opposite()) &&
+                            !isUnderAttack(getSquare(row, column-1), color.opposite())){
+                        result.add(testSquare);
+                    }
+                    testSquare = getSquare(row, column+2);
+                    if (getPiece(testSquare) == null &&
+                            !isUnderAttack(testSquare, color.opposite()) &&
+                            !isUnderAttack(getSquare(row, column+1), color.opposite())){
+                        result.add(testSquare);
+                    }
+                }
+            }
         }
-        return null;
+        return attacksSquares(piece);
     }
 
     public Square[] attacksSquares(Piece piece) {
         ArrayList<Square> result = new ArrayList<>(0);
         Square square = getSquare(piece);
         Color player = piece.getColor();
-        int[] coordinates = getCoordinates(square);
-        int row = coordinates[0];
-        int column = coordinates[1];
+        ArrayList<Integer> coordinates = (ArrayList<Integer>) getCoordinates(square);
+        int row = coordinates.get(0);
+        int column = coordinates.get(1);
         switch (piece.value) {
             case PAWN: {
                 int direction = 1;
@@ -250,9 +277,9 @@ public class Board {
 
     public boolean isUnderAttack(Square square, Color color) {
         Board board = square.board;
-        int[] coordinates = board.getCoordinates(square);
-        int row = coordinates[0];
-        int column = coordinates[1];
+        ArrayList<Integer> coordinates = (ArrayList<Integer>)board.getCoordinates(square);
+        int row = coordinates.get(0);
+        int column = coordinates.get(1);
         int searchRow;
         int searchColumn;
         int result; /*Pawn*/
@@ -362,14 +389,22 @@ public class Board {
         return state.inverse().get(piece);
     }
 
-    public Square getSquare(int[] coordinates) {
-        if (color == Color.NONE) coordinates[0] %= 8;
-        coordinates[1] %= 8;
-        return squares.inverse().get(coordinates);
+    public Square getSquare(List<Integer> coordinates) {
+        int row = coordinates.get(0);
+        int column = coordinates.get(1);
+        if (color == Color.NONE) row %= 8;
+        column %= 8;
+        ArrayList<Integer> newCoordinates = new ArrayList<>();
+        newCoordinates.add(row);
+        newCoordinates.add(column);
+        return squares.inverse().get(newCoordinates);
     }
 
     public Square getSquare(int row, int column) {
-        return getSquare(new int[]{row, column});
+        ArrayList<Integer> coordinates = new ArrayList<>();
+        coordinates.add(row);
+        coordinates.add(column);
+        return getSquare(coordinates);
     }
 
     public Square getSquare(String squareName) {
@@ -381,7 +416,7 @@ public class Board {
         return state.get(square);
     }
 
-    public Piece getPiece(int[] coordinates) {
+    public Piece getPiece(List<Integer> coordinates) {
         return getPiece(getSquare(coordinates));
     }
 
@@ -394,19 +429,19 @@ public class Board {
     }
 
 
-    public int[] getCoordinates(Square square) {
+    public List<Integer> getCoordinates(Square square) {
         return squares.get(square);
     }
 
-    public int[] getCoordinates(Piece piece) {
+    public List<Integer> getCoordinates(Piece piece) {
         return getCoordinates(state.inverse().get(piece));
     }
 
-    public int[] getCoordinates(int row, int column) {
+    public List<Integer> getCoordinates(int row, int column) {
         return getCoordinates(getSquare(row, column));
     }
 
-    public static int[] getCoordinates(String squareName) {
+    public static List<Integer> getCoordinates(String squareName) {
         return squareNames.inverse().get(squareName);
     }
 
@@ -415,7 +450,7 @@ public class Board {
         state.put(square, piece);
     }
 
-    public void setPiece(int[] coordinates, Piece piece) {
+    public void setPiece(List<Integer> coordinates, Piece piece) {
         setPiece(getSquare(coordinates), piece);
     }
 
@@ -436,7 +471,7 @@ public class Board {
         removePiece(getSquare(piece));
     }
 
-    public void removePiece(int[] coordinates) {
+    public void removePiece(List<Integer> coordinates) {
         removePiece(getSquare(coordinates));
     }
 
@@ -459,7 +494,7 @@ public class Board {
         return popPiece(getSquare(piece));
     }
 
-    public Piece popPiece(int[] coordinates) {
+    public Piece popPiece(List<Integer> coordinates) {
         return popPiece(getSquare(coordinates));
     }
 
@@ -482,7 +517,7 @@ public class Board {
         return replacePiece(getSquare(replace), with);
     }
 
-    public Piece replacePiece(int[] coordinates, Piece with) {
+    public Piece replacePiece(List<Integer> coordinates, Piece with) {
         return replacePiece(getSquare(coordinates), with);
     }
 
@@ -499,12 +534,15 @@ public class Board {
         return getSquareName(getCoordinates(square));
     }
 
-    public static String getSquareName(int[] coordinates) {
+    public static String getSquareName(List<Integer> coordinates) {
         return squareNames.get(coordinates);
     }
 
     public static String getSquareName(int row, int column) {
-        return squareNames.get(new int[]{row, column});
+        ArrayList<Integer> coordinates = new ArrayList<>();
+        coordinates.add(row);
+        coordinates.add(column);
+        return squareNames.get(coordinates);
     }
 
 
@@ -524,8 +562,8 @@ public class Board {
         return 1;
     }
 
-    public int testSquare(int[] coordinates, Color color, Value value) {
-        return testSquare(getSquare(coordinates), color, value);
+    public int testSquare(List<Integer> coordinates, Color color, Value value) {
+        return testSquare(getSquare(coordinates.get(0), coordinates.get(1)), color, value);
     }
 
     public int testSquare(int row, int column, Color color, Value value) {
@@ -538,11 +576,12 @@ public class Board {
 
 
     public Piece[] getPieces() {
-        return state.inverse().keySet().toArray(new Piece[0]);
+        return state.inverse().keySet().toArray(new Piece[state.inverse().keySet().size()]);
     }
 
     public Piece[] getPieces(Value value) {
         return (Arrays.stream(getPieces()).filter(piece -> piece.value == value)
                 .toArray(size -> new Piece[size]));
     }
+
 }
