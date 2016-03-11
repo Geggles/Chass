@@ -72,21 +72,6 @@ public class ConsoleController implements Controller {
     }
 
     private void doGameLoop(){
-        final String operatingSystem = System.getProperty("os.name");
-
-        try {
-            if (operatingSystem .contains("Windows")) {
-                Runtime.getRuntime().exec("cls");
-            }
-            else {
-                Runtime.getRuntime().exec("clear");
-            }
-        } catch (IOException e){
-            for(int clear = 0; clear < 1000; clear++) {
-                System.out.println("\b") ;
-            }
-        }
-
         boolean valid;
         Move move = null;
         Color turnPlayer;
