@@ -20,9 +20,9 @@ public class Controller {
     private int currentPly = 0;
 
     public Controller() {
-        alpha = new Board(Color.WHITE);
-        beta = new Board(Color.BLACK);
-        gamma = new Board(Color.NONE);
+        alpha = new Board(Color.WHITE, 'A');
+        beta = new Board(Color.BLACK, 'B');
+        gamma = new Board(Color.NONE, 'C');
         prisons = new HashMap<>(2);
         prisons.put(Color.WHITE, new PieceCollection());
         prisons.put(Color.BLACK, new PieceCollection());
@@ -70,7 +70,7 @@ public class Controller {
 
     public boolean inCheck(Color player){
         Board board = getBoard(player);
-        return board.check();
+        return board.inCheck();
     }
 
     public boolean inCheck(){
@@ -78,12 +78,14 @@ public class Controller {
     }
 
     /**
-     * Return side that player can castle to (King/Queen/None)
+     * Check which sides a player can castle to.
+     * @param player The color of the player that is to be checked.
+     * @return An array containing KING, QUEEN, neither or both, depending on which side the player can castle into
      * */
     public Value[] canCastleTo(Color player) {
         ArrayList<Value> result = new ArrayList<>(0);
         Board board = getBoard(player);
-        Character boardName = getBoardName(board);
+        Character boardName = board.name;
         int row = 0;
         if (player == Color.BLACK) row = 7;
         String kingSquare = Board.getSquareName(row, 4);
@@ -452,105 +454,102 @@ public class Controller {
         return moves.toArray(new String[moves.size()]);
     }
 
-    public String encodeMove(Move move){
-        String moveString = "INVALID";
+    public String encodeMove(Move move) throws IllegalArgumentException{
+        if (move == null || MoveType.of(move) == null){
+            throw new IllegalArgumentException("Invalid Move");
+        }
+
+        String moveString = "";
         String promotionString = "";
         if (move.promotion!=null) promotionString = "=" + promotionString;
         String stateString = "";
         if (move.promotion!=null) stateString = move.state.toString();
 
-        if (move.pieceNames.length == 1 &&
-                move.boardNames.length == 0 &&
-                move.squareNames.length == 0){  // castle:
-            moveString = "O-O";
-            if (move.pieceNames[0]=='Q') moveString = "O-O-O";
-        }else if (move.pieceNames.length == 1 &&
-                move.boardNames.length == 0 &&
-                move.squareNames.length == 1){  // drop
-            moveString = String.format(">%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0]);
-        }else if (move.pieceNames.length == 2 &&
-                move.boardNames.length == 0 &&
-                move.squareNames.length == 1) {  // hostage exchange
-            moveString = String.format("%s>%s%s",
-                    move.pieceNames[0],
-                    move.pieceNames[1],
-                    move.squareNames[0]);
-        }else if (move.pieceNames.length == 2 &&
-                move.boardNames.length == 4 &&
-                move.squareNames.length == 1) {  // swap2
-            moveString = String.format("%s%s-%s%s_%s%s>%s%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0],
-                    move.pieceNames[1],
-                    promotionString,
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    move.boardNames[2],
-                    move.boardNames[3],
-                    stateString);
-        }else if (move.pieceNames.length == 3 &&
-                move.boardNames.length == 6 &&
-                move.squareNames.length == 1) {  // swap3
-            moveString = String.format("%s%s-%s-%s%s_%s%s%s>%s%s%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0],
-                    move.pieceNames[1],
-                    move.pieceNames[2],
-                    promotionString,
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    move.boardNames[2],
-                    move.boardNames[3],
-                    move.boardNames[4],
-                    move.boardNames[5],
-                    stateString);
-        }else if (move.pieceNames.length == 2 &&
-                move.boardNames.length == 2 &&
-                move.squareNames.length == 2) {  // capture
-            moveString = String.format("%s%sx%s%s%s_%s>%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0],
-                    move.pieceNames[1],
-                    move.squareNames[1],
-                    promotionString,
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    stateString);
-        }else if (move.pieceNames.length == 2 &&
-                move.boardNames.length == 3 &&
-                move.squareNames.length == 2) {  // steal
-            moveString = String.format("%s%sx%s%s%s_%s>%s>%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0],
-                    move.pieceNames[1],
-                    move.squareNames[1],
-                    promotionString,
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    move.boardNames[2],
-                    stateString);
-        }else if (move.pieceNames.length == 0 &&
-                move.boardNames.length == 2 &&
-                move.squareNames.length == 2) {  // en passant
-            moveString = String.format("P%sp%s_%s>%s%s",
-                    move.squareNames[0],
-                    move.squareNames[1],
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    stateString);
-        }else if (move.pieceNames.length == 1 &&
-                move.boardNames.length == 2 &&
-                move.squareNames.length == 2) {  // translate
-            moveString = String.format("%s%s-%s_%s>%s%s",
-                    move.pieceNames[0],
-                    move.squareNames[0],
-                    move.squareNames[1],
-                    move.boardNames[0],
-                    move.boardNames[1],
-                    stateString);
-        }
+        switch (MoveType.of(move)) {
+            case CASTLE:
+                moveString = "O-O";
+                if (move.pieceNames[0] == 'Q') moveString = "O-O-O";
+                break;
+            case DROP:
+                moveString = String.format(">%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0]);
+                break;
+            case HOSTAGE_EXCHANGE:
+                moveString = String.format("%s>%s%s",
+                        move.pieceNames[0],
+                        move.pieceNames[1],
+                        move.squareNames[0]);
+                break;
+            case SWAP2:
+                moveString = String.format("%s%s-%s%s_%s%s>%s%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0],
+                        move.pieceNames[1],
+                        promotionString,
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        move.boardNames[2],
+                        move.boardNames[3],
+                        stateString);
+                break;
+            case SWAP3:
+                moveString = String.format("%s%s-%s-%s%s_%s%s%s>%s%s%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0],
+                        move.pieceNames[1],
+                        move.pieceNames[2],
+                        promotionString,
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        move.boardNames[2],
+                        move.boardNames[3],
+                        move.boardNames[4],
+                        move.boardNames[5],
+                        stateString);
+                break;
+            case CAPTURE:
+                moveString = String.format("%s%sx%s%s%s_%s>%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0],
+                        move.pieceNames[1],
+                        move.squareNames[1],
+                        promotionString,
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        stateString);
+                break;
+            case STEAL:
+                moveString = String.format("%s%sx%s%s%s_%s>%s>%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0],
+                        move.pieceNames[1],
+                        move.squareNames[1],
+                        promotionString,
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        move.boardNames[2],
+                        stateString);
+                break;
+            case EN_PASSANT:
+                moveString = String.format("P%sxP%s_%s>%s%s",
+                        move.squareNames[0],
+                        move.squareNames[1],
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        stateString);
+                break;
+            case TRANSLATE:
+            case PROMOTION:
+                moveString = String.format("%s%s-%s_%s>%s%s",
+                        move.pieceNames[0],
+                        move.squareNames[0],
+                        move.squareNames[1],
+                        move.boardNames[0],
+                        move.boardNames[1],
+                        stateString);
+                break;
+            }
         return moveString;
     }
 

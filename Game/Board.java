@@ -1,9 +1,8 @@
 package Game;
 
-import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.sun.istack.internal.Nullable;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,9 +24,11 @@ public class Board {
     }
 
     public final Color color;
+    public final Character name;
 
-    public Board(Color color) {
+    public Board(Color color, Character name) {
         this.color = color;
+        this.name = name;
         setupSquares();
         if (color != Color.NONE) {
             setupPieces();
@@ -76,28 +77,50 @@ public class Board {
     }
 
     /**
-     * Check whether the piece on 'square' is pinned or not.
+     * Calculate the distance between two squares.
+     * <p>
+     *     Squares may be of different boards. They will be treated as though being
+     *     on the same board.
+     *     Positive direction is up right.
+     * </p>
+     * @param sourceSquare The square to calculate to distance from.
+     * @param destinationSquare The square to calculate to distance to.
+     * @return The distance between the squares.
+     */
+    public static int[] calculateDistance(Square sourceSquare, Square destinationSquare){
+        List<Integer> c1 = sourceSquare.board.getCoordinates(sourceSquare);
+        List<Integer> c2 = destinationSquare.board.getCoordinates(destinationSquare);
+
+        int x1 = c1.get(0);
+        int y1 = c1.get(1);
+        int x2 = c2.get(0);
+        int y2 = c2.get(1);
+
+        int dx = x2 - x1;
+        int dy = y1 - y2;
+
+        return new int[]{dx, dy};
+    }
+
+    /**
+     * Check whether a piece is pinned
+     * @param square The square to be checked for pins
+     * @return Whether the piece on the input square is pinned or not.
      */
     public boolean isPinned(Square square) {
         Piece piece = getPiece(square);
-        if (piece == null || piece.getColor() == color) return false;
-        for (Piece p :
-                getPieces()) {
-            if (p.value == Value.KING && p.getColor() != piece.getColor()) {
-                Square kingSquare = getSquare(p);
-                removePiece(piece);
-                boolean result = isUnderAttack(kingSquare, piece.getColor());
-                setPiece(square, piece);
-                return result;
-            }
-        }
-        throw new IllegalArgumentException("King has fallen over board!");
+        if (piece == null) return false;
+        Piece king = getPieces(Value.KING, piece.getColor())[0];
+        removePiece(piece);
+        boolean result = inCheck();
+        setPiece(square, piece);
+        return result;
     }
     /**
-     * Check whether king is in check
+     * Check whether king is in in check.
      * */
-    public boolean check(){
-        Square kingSquare = getSquare(getPieces(Value.KING)[0]);
+    public boolean inCheck(){
+        Square kingSquare = getSquare(getPieces(Value.KING, this.color)[0]);
         return isUnderAttack(kingSquare, color.opposite());
     }
 
@@ -106,10 +129,19 @@ public class Board {
     }
 
     /**
-     * @param piece
+     * Calculate all squares a given piece can move to.
+     * <p>
+     *     Only works in respect to translation and capture.
+     *     Except for Pawn and King, the result is equal to attacksSquares.
+     * </p>
+     * @param piece The piece whose possible moves are to be calculated.
      * @return Array of squares that the given piece can move to. Regardless of validity of move.
      */
     public Square[] canGoTo(Piece piece) {
+        ArrayList<Square>result = canGoToAsArrayList(piece);
+        return result.toArray(new Square[result.size()]);
+    }
+    private ArrayList<Square> canGoToAsArrayList(Piece piece) {
         ArrayList<Square> result = new ArrayList<>(1);
         Square testSquare;
         Square square = getSquare(piece);
@@ -138,7 +170,7 @@ public class Board {
             int baseRow = 0;
             if (piece.getColor() == Color.BLACK) baseRow = 7;
             if (row == baseRow && column == 4){
-                if (!check()){
+                if (!inCheck()){
                     testSquare = getSquare(row, column-2);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite()) &&
@@ -154,10 +186,16 @@ public class Board {
                 }
             }
         }
-        return attacksSquares(piece);
+        result.addAll(attacksSquaresAsArraylist(piece));
+        return result;
     }
 
-    public Square[] attacksSquares(Piece piece) {
+    public Square[] attacksSquares(Piece piece){
+        ArrayList<Square> result = attacksSquaresAsArraylist(piece);
+        return result.toArray(new Square[result.size()]);
+    }
+
+    private ArrayList<Square> attacksSquaresAsArraylist(Piece piece) {
         ArrayList<Square> result = new ArrayList<>(0);
         Square square = getSquare(piece);
         Color player = piece.getColor();
@@ -196,8 +234,8 @@ public class Board {
                 break;
             }
             default: {
-                int searchRow = row;
-                int searchColumn = column;
+                int searchRow;
+                int searchColumn;
                 switch (piece.value) {
                     case BISHOP: {
                         searchRow = row;
@@ -269,10 +307,9 @@ public class Board {
                         break;
                     }
                 }
-                return result.toArray(new Square[result.size()]);
             }
         }
-        return result.toArray(new Square[result.size()]);
+        return result;
     }
 
     public boolean isUnderAttack(Square square, Color color) {
@@ -380,9 +417,8 @@ public class Board {
         if (testSquare(row - 1, column + 2, color, Value.KNIGHT) == 1) return true;
         if (testSquare(row - 1, column - 2, color, Value.KNIGHT) == 1) return true;
         if (testSquare(row - 2, column + 1, color, Value.KNIGHT) == 1) return true;
-        if (testSquare(row - 2, column - 1, color, Value.KNIGHT) == 1) return true;
+        return testSquare(row - 2, column - 1, color, Value.KNIGHT) == 1;
 
-        return false;
     }
 
     public Square getSquare(Piece piece) {
@@ -575,13 +611,21 @@ public class Board {
     }
 
 
-    public Piece[] getPieces() {
-        return state.inverse().keySet().toArray(new Piece[state.inverse().keySet().size()]);
+    public Piece[] getPieces(@Nullable Value value, @Nullable Color player) {
+        Piece[] allPieces = (state.inverse().keySet().toArray(
+                new Piece[state.inverse().keySet().size()]));
+        if (value == null && player == null) {
+            //trivial case
+            return allPieces;
+        }
+        return  (Arrays.stream(allPieces)
+                .filter(piece -> this.testPiece(piece, value, player))
+                .toArray(size -> new Piece[size]));
     }
 
-    public Piece[] getPieces(Value value) {
-        return (Arrays.stream(getPieces()).filter(piece -> piece.value == value)
-                .toArray(size -> new Piece[size]));
+    private boolean testPiece(Piece piece, @Nullable Value value, @Nullable Color player){
+        if (value != null && piece.value != value) return false;
+        return !(player != null && piece.getColor() != player);
     }
 
 }

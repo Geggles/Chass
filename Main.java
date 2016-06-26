@@ -15,6 +15,5 @@ public class Main {
             controller = new ConsoleController();
         }
         controller.startGame();  // give control to controller
-
     }
 }

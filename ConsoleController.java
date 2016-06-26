@@ -100,7 +100,7 @@ public class ConsoleController implements Controller {
                     if (inString.equals("exit")) break gameLoop;
                     if (inString.equals("cancel")) break;
                     Board sourceBoard = gameController.getBoard(inString.charAt(0));
-                    if (sourceBoard.getPieces().length == 0) break;
+                    if (sourceBoard.getPieces(null, null).length == 0) break;
 
                     printBoards();
                     System.out.println("Input <exit> to exit the application");
@@ -218,7 +218,7 @@ public class ConsoleController implements Controller {
                                 new String[]{}
                                 );
                     }
-                    // check for pinned / king moving into check
+                    // inCheck for pinned / king moving into inCheck
                     break;
                 case "Exchange":
                 case "E":
