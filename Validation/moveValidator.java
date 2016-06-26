@@ -29,7 +29,7 @@ public class MoveValidator {
         }
         Color turnPlayer = controller.getCurrentPlayer();
         switch (MoveType.of(move)){
-            case PROMOTION: return
+            case PROMOTION: return true;
         }
         return true;
     }
