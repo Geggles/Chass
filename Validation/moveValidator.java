@@ -1,9 +1,9 @@
 package Validation;
 
 import Game.*;
+import Miscellaneous.Color;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Has to validate in context. Therefore always needs a Game.controller object. To not pass around

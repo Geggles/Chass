@@ -1,6 +1,7 @@
 import Game.*;
+import Miscellaneous.Color;
+import Miscellaneous.Persistence;
 
-import java.io.IOException;
 import java.util.*;
 
 public class ConsoleController implements Controller {

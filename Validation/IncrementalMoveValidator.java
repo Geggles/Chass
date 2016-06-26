@@ -1,6 +1,7 @@
 package Validation;
 
 import Game.*;
+import Miscellaneous.Color;
 
 import java.util.List;
 
