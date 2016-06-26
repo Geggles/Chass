@@ -1,5 +1,6 @@
 package Game;
 
+import Miscellaneous.Color;
 import com.google.common.collect.HashBiMap;
 import com.sun.istack.internal.Nullable;
 

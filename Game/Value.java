@@ -1,5 +1,7 @@
 package Game;
 
+import Miscellaneous.Color;
+
 public enum Value {
     PAWN(1, 'P', '\u2659', '\u265F'),
     BISHOP(3, 'B', '\u2657', '\u265D'),

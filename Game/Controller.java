@@ -1,5 +1,7 @@
 package Game;
 
+import Miscellaneous.Color;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;

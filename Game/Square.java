@@ -1,5 +1,7 @@
 package Game;
 
+import Miscellaneous.Color;
+
 public class Square {
     public final Color color;
     public final Board board;

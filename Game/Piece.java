@@ -1,5 +1,7 @@
 package Game;
 
+import Miscellaneous.Color;
+
 public class Piece {
     private Color color;
     public final Value value;
