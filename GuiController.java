@@ -1,21 +1,34 @@
+import Game.*;
 import com.trolltech.qt.QSignalEmitter;
 import GUI.Signals;
 import com.trolltech.qt.gui.*;
+
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.LinkedList;
+
 public class GuiController extends QSignalEmitter implements Controller{
     /*Emit when file->save is invoked*/
     private Signals signals = new Signals();
-    private Game.Controller gameController;
+    private Game.Controller gameController = new Game.Controller();
     private QMainWindow mainWin;
-    public GuiController(){ String[] args = new String[0];
+    public GuiController(){
+        String[] args = new String[0];
         QApplication app = new QApplication(args);
         setupGui(); signals.saveGame.connect(this, "saveGame()");
-        signals.exitApplication.connect(app, "exit()"); app.exec(); }
+        signals.exitApplication.connect(app, "exit()"); app.exec();
+        this.setupGui();
+    }
     private void setupGui(){
         mainWin = new QMainWindow();
         QWidget centralWidget = new QWidget(mainWin);
         mainWin.setCentralWidget(centralWidget);
 
         setupMenuBar();
+
+
         mainWin.show();
     }
 
@@ -29,5 +42,9 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
     @Override
     public void startGame(){
+    }
+
+    public void saveGame(){
+        Persistence.saveMoves(gameController.getMoves());
     }
 }

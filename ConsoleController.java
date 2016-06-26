@@ -72,21 +72,6 @@ public class ConsoleController implements Controller {
     }
 
     private void doGameLoop(){
-        final String operatingSystem = System.getProperty("os.name");
-
-        try {
-            if (operatingSystem .contains("Windows")) {
-                Runtime.getRuntime().exec("cls");
-            }
-            else {
-                Runtime.getRuntime().exec("clear");
-            }
-        } catch (IOException e){
-            for(int clear = 0; clear < 1000; clear++) {
-                System.out.println("\b") ;
-            }
-        }
-
         boolean valid;
         Move move = null;
         Color turnPlayer;
@@ -115,7 +100,7 @@ public class ConsoleController implements Controller {
                     if (inString.equals("exit")) break gameLoop;
                     if (inString.equals("cancel")) break;
                     Board sourceBoard = gameController.getBoard(inString.charAt(0));
-                    if (sourceBoard.getPieces().length == 0) break;
+                    if (sourceBoard.getPieces(null, null).length == 0) break;
 
                     printBoards();
                     System.out.println("Input <exit> to exit the application");
@@ -233,7 +218,7 @@ public class ConsoleController implements Controller {
                                 new String[]{}
                                 );
                     }
-                    // check for pinned / king moving into check
+                    // inCheck for pinned / king moving into inCheck
                     break;
                 case "Exchange":
                 case "E":

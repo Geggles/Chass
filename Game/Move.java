@@ -3,13 +3,13 @@ package Game;
  * Specification for move types:
  *   <All>:
  *      state: Either null if move did not lead to a special game state or
- *               '+' if move lead to a check or
+ *               '+' if move lead to a inCheck or
  *               '#' if move lead to a checkmate or
  *               '@' if move lead to a stalemate
  *      promotion: either null if not promotion happened or
  *                   name of piece that has been promoted to
  *   Castle:
- *      pieceNames: Either 'Q' for castle queenside or 'K' for kingside
+ *      pieceNames: Either 'Q' for castle queen side or 'K' for king side
  *      boardNames: Empty
  *      squareNames: Empty
  *   Drop:
@@ -47,12 +47,7 @@ package Game;
  *                  Board the captured piece is on after the capture
  *      squareNames: Square the piece started out on
  *                   Square the capture happened on
- *   En Passant:
- *      pieceNames: Empty
- *      boardNames: Board the capture happened on
- *                  Board the Piece is on after the capture
- *      squareNames: Square the capturing pawn started out on
- *                   Square the capturing pawn is on after the capture
+
  *   Translate:
  *      pieceNames: Piece that has moved
  *      boardNames: Board the translation happened on
