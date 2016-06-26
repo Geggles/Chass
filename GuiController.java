@@ -5,8 +5,6 @@ import com.trolltech.qt.QSignalEmitter;
 import GUI.Signals;
 import com.trolltech.qt.gui.*;
 
-import java.util.ArrayList;
-
 public class GuiController extends QSignalEmitter implements Controller{
     private final Signals signals = Signals.getInstance();
     private final SettingsManager settings = SettingsManager.getInstance();
