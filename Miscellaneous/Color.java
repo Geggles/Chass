@@ -1,4 +1,4 @@
-package Game;
+package Miscellaneous;
 
 public enum Color {
     BLACK,
