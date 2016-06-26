@@ -1,4 +1,4 @@
-package Game;
+package Miscellaneous;
 
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -9,8 +9,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class Persistence {
     private static Path saveDirectory = Paths.get("");
