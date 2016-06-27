@@ -23,4 +23,11 @@ public class Square extends QWidget {
     public Color getColor(){
         return color;
     }
+
+    /**
+     * Set the background color of this square to color
+     */
+    public void setColor(QColor color){
+
+    }
 }
