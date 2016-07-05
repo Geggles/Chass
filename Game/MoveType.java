@@ -13,6 +13,7 @@ public enum MoveType {
     TRANSLATE;
 
     public static MoveType of(Move move) {
+        if (move == null) return null;
         if (move.promotion != null) {
             return PROMOTION;
         }

@@ -1,6 +1,7 @@
 package Game;
 
-import Miscellaneous.Color;
+import Shared.Color;
+import Shared.Value;
 
 public class Piece {
     private Color color;

@@ -1,4 +1,4 @@
-package Miscellaneous;
+package Game;
 
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;

@@ -1,4 +1,4 @@
-package Miscellaneous;
+package Shared;
 
 public enum Color {
     BLACK,

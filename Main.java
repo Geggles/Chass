@@ -17,11 +17,5 @@ public class Main {
         }else{
             controller = new ConsoleController();
         }
-        // give control to controller
-/*        QApplication app = new QApplication(args);
-        QWidget x = new QWidget();
-        x.setProperty("gameColor", Miscellaneous.Color.WHITE);
-        System.out.print(x.property("gameColor"));
-        System.out.print(x.property("gameColor")==Miscellaneous.Color.WHITE);*/
     }
 }

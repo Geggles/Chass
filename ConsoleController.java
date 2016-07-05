@@ -1,6 +1,7 @@
 import Game.*;
-import Miscellaneous.Color;
-import Miscellaneous.Persistence;
+import Shared.Color;
+import Game.Persistence;
+import Shared.Value;
 
 import java.util.*;
 
@@ -14,7 +15,7 @@ public class ConsoleController implements Controller {
         squares.put(Color.NONE, "\u0020");  // normal space
     }
     private static final EnumMap<Value, EnumMap<Color, Character>>
-            symbols = new EnumMap<>(Game.Value.class);
+            symbols = new EnumMap<>(Value.class);
     //private static final String
     static {
         //White Black
@@ -75,7 +76,7 @@ public class ConsoleController implements Controller {
     private void doGameLoop(){
         boolean valid;
         Move move = null;
-        Color turnPlayer;
+        Color turnPlayer = Color.WHITE;
         Scanner input = new Scanner(System.in);
         gameLoop:
         while (gameController.getCurrentPly()==0 || gameController.getLatestMove().state == null) {
@@ -159,14 +160,10 @@ public class ConsoleController implements Controller {
                     //-------------------
 
                     // Castle
-                    List<Integer> sourceCoordinates =
-                            sourceBoard.getCoordinates(sourceSquare);
-                    int sourceRow = sourceCoordinates.get(0);
-                    int sourceColumn = sourceCoordinates.get(1);
-                    List<Integer> destinationCoordinates =
-                            sourceBoard.getCoordinates(destinationSquare);
-                    int destinationRow = destinationCoordinates.get(0);
-                    int destinationColumn = destinationCoordinates.get(1);
+                    int sourceRow = sourceSquare.row;
+                    int sourceColumn = sourceSquare.column;
+                    int destinationRow = destinationSquare.row;
+                    int destinationColumn = destinationSquare.column;
                     int baseRow = 0;
                     if (sourceBoard.color == Color.BLACK) baseRow = 7;
                     if (sourcePiece.value == Value.KING &&
@@ -187,6 +184,7 @@ public class ConsoleController implements Controller {
                             System.out.println("Can't castle (into that direction)");
                         }
                         move = new Move(
+                                turnPlayer,
                                 null,
                                 null,
                                 new Character[]{castleDirection.name},
@@ -212,6 +210,7 @@ public class ConsoleController implements Controller {
 
                     if (gameController.inCheck()){
                         move = new Move(
+                                turnPlayer,
                                 null,
                                 null,
                                 new Character[]{},
