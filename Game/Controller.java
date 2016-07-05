@@ -1,5 +1,9 @@
 package Game;
 
+import Shared.Color;
+import Shared.Value;
+import javafx.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -210,7 +214,7 @@ public class Controller {
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             getPrison(turnPlayer).removePiece(destinationPiece.value);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
                 destinationBoard.setPiece(move.squareNames[1], new Piece(Value.PAWN, turnPlayer));
             }
 
@@ -229,7 +233,7 @@ public class Controller {
                 move.squareNames.length == 2) {  // en passant
             int pawnRow = 3;
             if (turnPlayer == Color.BLACK) pawnRow = 4;
-            int destinationColumn = Board.getCoordinates(move.squareNames[1]).get(1);
+            int destinationColumn = Board.getCoordinates(move.squareNames[1])[1];
             Board sourceBoard = getBoard(move.boardNames[1]);
             Board destinationBoard = getBoard(move.boardNames[0]);
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
@@ -245,7 +249,7 @@ public class Controller {
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[1]);
             destinationBoard.setPiece(move.squareNames[0], sourcePiece);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
                 destinationBoard.setPiece(move.squareNames[1], new Piece(Value.PAWN, turnPlayer));
             }
         }
@@ -334,7 +338,7 @@ public class Controller {
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             getPrison(turnPlayer).addPiece(destinationPiece.value);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0) {
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
                 promote(sourceBoard.getSquare(move.squareNames[1]),
                         Value.getValueFromName(move.promotion));
             }
@@ -354,7 +358,7 @@ public class Controller {
                 move.squareNames.length == 2) {  // en passant
             int pawnRow = 3;
             if (turnPlayer == Color.BLACK) pawnRow = 4;
-            int destinationColumn = Board.getCoordinates(move.squareNames[1]).get(1);
+            int destinationColumn = Board.getCoordinates(move.squareNames[1])[1];
             Board sourceBoard = getBoard(move.boardNames[0]);
             Board destinationBoard = getBoard(move.boardNames[1]);
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
@@ -370,7 +374,7 @@ public class Controller {
             Piece sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
             destinationBoard.setPiece(move.squareNames[1], sourcePiece);
             if (move.pieceNames[0] == 'P' &&
-                    Board.getCoordinates(move.squareNames[1]).get(0) % 7 == 0){
+                    Board.getCoordinates(move.squareNames[1])[0] % 7 == 0){
                 promote(sourceBoard.getSquare(move.squareNames[1]),
                         Value.getValueFromName(move.promotion));
             }
@@ -639,6 +643,7 @@ public class Controller {
             squareNames[0] = moveString.substring(1, 3);
         }
         move = new Move(
+                turnPlayer,
                 state,
                 promotion,
                 pieceNames,
@@ -646,5 +651,256 @@ public class Controller {
                 squareNames
         );
         return move;
+    }
+
+    public boolean validMove(Move move){
+        if (move == null || MoveType.of(move) == null){
+            return false;
+        }
+        return true;
+/*        Color turnPlayer = getCurrentPlayer();
+        switch (MoveType.of(move)){
+            case PROMOTION: return true;
+        }
+        return true;*/
+    }
+
+    private static boolean validCastle(){
+        return true;
+    }
+
+    public Move[] validSwaps(Square sourceSquare){
+        if (sourceSquare == null) return new Move[0];
+        Board sourceBoard = sourceSquare.board;
+        if (sourceBoard == null) return new Move[0];
+        Piece sourcePiece = sourceBoard.getPiece(sourceSquare);
+        if (sourcePiece == null) return new Move[0];
+        String squareName = Board.getSquareName(sourceSquare);
+        ArrayList<Character> boardNames = new ArrayList<>(3);
+        ArrayList<Move> validSwaps = new ArrayList<>(8);
+        if (alpha.getPiece(squareName) != null) boardNames.add('A');
+        if (beta.getPiece(squareName) != null) boardNames.add('B');
+        if (gamma.getPiece(squareName) != null) boardNames.add('C');
+        if (boardNames.size() == 1) return new Move[0];
+        boolean firstOne = true;  // so that original composition doesn't get counted as a swap
+        for (Character boardName0 :
+                boardNames) {
+            for (Character boardName1 :
+                    boardNames) {
+                if (boardName1 == boardName0) continue;
+                if (boardNames.size() == 3){
+                    for (Character boardName2 :
+                            boardNames) {
+                        if (firstOne){
+                            firstOne = false;
+                            continue;
+                        }
+                        if (boardName2 == boardName0) continue;
+                        if (boardName2 == boardName1) continue;
+                        Board board0 = getBoard(boardName0);
+                        Board board1 = getBoard(boardName1);
+                        Board board2 = getBoard(boardName2);
+                        validSwaps.add(new Move(
+                                getCurrentPlayer(), null, null,
+                                new Character[]{board0.getPiece(squareName).value.name,
+                                        board1.getPiece(squareName).value.name,
+                                        board2.getPiece(squareName).value.name},
+                                new Character[]{boardNames.get(0), boardNames.get(1),
+                                        boardNames.get(2),
+                                        boardName0, boardName1, boardName2},
+                                new String[]{squareName}
+                        ));
+                    }
+                } else {
+                    if (firstOne){
+                        firstOne = false;
+                        continue;
+                    }
+                    if (boardName0 != sourceBoard.name &&
+                            boardName1 != sourceBoard.name) continue;
+                    Board board0 = getBoard(boardName0);
+                    Board board1 = getBoard(boardName1);
+                    validSwaps.add(new Move(
+                            getCurrentPlayer(), null, null,
+                            new Character[]{board0.getPiece(squareName).value.name,
+                                    board1.getPiece(squareName).value.name},
+                            new Character[]{boardNames.get(0), boardNames.get(1),
+                                    boardName0, boardName1},
+                            new String[]{squareName}
+                    ));
+                }
+            }
+        }
+        return validSwaps.toArray(new Move[validSwaps.size()]);
+    }
+
+    private void addMoveIfValid(ArrayList<Move> moves,
+                                       Color player,
+                                       Character[] pieceNames,
+                                       Character[] boardNames,
+                                       String[] squareNames){
+        Move move = new Move(player, null, null, pieceNames, boardNames, squareNames);
+        if (validMove(move)){
+            moves.add(move);
+        }
+    }
+
+    public Move[] getValidMoves(Square sourceSquare){
+        Piece sourcePiece = sourceSquare.board.getPiece(sourceSquare);
+        if (sourcePiece == null || sourcePiece.getColor() != getCurrentPlayer()) return new Move[0];
+        ArrayList<Move> moves = new ArrayList<>(10);  // 10 is arbitrary
+        Board sourceBoard = sourceSquare.board;
+        Square[] canGoTo = sourceBoard.canGoTo(sourcePiece);
+
+        switch (sourcePiece.value){  // special cases
+            case KING:
+                //castle
+                addMoveIfValid(
+                        moves,
+                        getCurrentPlayer(),
+                        new Character[]{'K'},
+                        new Character[0],
+                        new String[0]);
+                addMoveIfValid(
+                        moves,
+                        getCurrentPlayer(),
+                        new Character[]{'Q'},
+                        new Character[0],
+                        new String[0]);
+                break;
+            case PAWN:
+                Square[] attacks = sourceBoard.attacksSquares(sourcePiece);
+                for (Square square:
+                        attacks) {
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[0],
+                            new Character[]{sourceBoard.name, 'A'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[0],
+                            new Character[]{sourceBoard.name, 'B'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                }
+                break;
+        }
+
+        for (Square square:
+                canGoTo) {
+            Piece destinationPiece = sourceBoard.getPiece(square);
+            if (destinationPiece == null){  // translate
+                addMoveIfValid(
+                        moves,
+                        getCurrentPlayer(),
+                        new Character[]{sourcePiece.value.name},
+                        new Character[]{sourceBoard.name, 'A'},
+                        new String[]{Board.getSquareName(sourceSquare),
+                                Board.getSquareName(square)}
+                );
+                addMoveIfValid(
+                        moves,
+                        getCurrentPlayer(),
+                        new Character[]{sourcePiece.value.name},
+                        new Character[]{sourceBoard.name, 'B'},
+                        new String[]{Board.getSquareName(sourceSquare),
+                                Board.getSquareName(square)}
+                );
+                addMoveIfValid(
+                        moves,
+                        getCurrentPlayer(),
+                        new Character[]{sourcePiece.value.name},
+                        new Character[]{sourceBoard.name, 'C'},
+                        new String[]{Board.getSquareName(sourceSquare),
+                                Board.getSquareName(square)});
+            } else{
+                if(destinationPiece.getColor() == sourcePiece.getColor()) continue;
+                if(sourceBoard.name == 'C'){  // steal
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[]{sourcePiece.value.name, destinationPiece.value.name},
+                            new Character[]{'C', 'A', 'B'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[]{sourcePiece.value.name, destinationPiece.value.name},
+                            new Character[]{'C', 'B', 'A'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                } else{  // capture
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[]{sourcePiece.value.name, destinationPiece.value.name},
+                            new Character[]{sourceBoard.name, 'A'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                    addMoveIfValid(
+                            moves,
+                            getCurrentPlayer(),
+                            new Character[]{sourcePiece.value.name, destinationPiece.value.name},
+                            new Character[]{sourceBoard.name, 'B'},
+                            new String[]{Board.getSquareName(sourceSquare),
+                                    Board.getSquareName(square)});
+                }
+            }
+        }
+        //swap
+        moves.addAll(Arrays.asList(validSwaps(sourceSquare)));
+        // null moves
+        addMoveIfValid(
+                moves,
+                getCurrentPlayer(),
+                new Character[]{sourcePiece.value.name},
+                new Character[]{sourceBoard.name, 'A'},
+                new String[]{Board.getSquareName(sourceSquare),
+                        Board.getSquareName(sourceSquare)}
+        );
+        addMoveIfValid(
+                moves,
+                getCurrentPlayer(),
+                new Character[]{sourcePiece.value.name},
+                new Character[]{sourceBoard.name, 'B'},
+                new String[]{Board.getSquareName(sourceSquare),
+                        Board.getSquareName(sourceSquare)}
+        );
+        return moves.toArray(new Move[moves.size()]);
+    }
+
+    public Move[] getValidMoves(Square sourceSquare, Square destinationSquare){
+        return getValidMoves(getValidMoves(sourceSquare), destinationSquare);
+    }
+
+    public Move[] getValidMoves(Move[] moves, Square destinationSquare){
+        return Arrays
+                .stream(moves)
+                .filter(move -> hasDestination(move, destinationSquare))
+                .toArray(size -> new Move[size]);
+    }
+
+    public boolean hasDestination(Move move, Square destinationSquare){
+        Pair destination = move.getDestinationBoardsAndSquareNames();
+        Board destinationBoard = destinationSquare.board;
+        Character[] destinationBoardNames = (Character[]) destination.getKey();
+        String destinationSquareName = (String) destination.getValue();
+        if (destinationSquareName.equals(Board.getSquareName(destinationSquare))){
+            return false;
+        }
+        boolean found = false;
+        for (Character boardName :
+                destinationBoardNames) {
+            if (boardName == destinationBoard.name){
+                found = true;
+                break;
+            }
+        }
+        return found;
     }
 }

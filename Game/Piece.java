@@ -1,5 +1,8 @@
 package Game;
 
+import Shared.Color;
+import Shared.Value;
+
 public class Piece {
     private Color color;
     public final Value value;

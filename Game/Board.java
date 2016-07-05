@@ -1,27 +1,17 @@
 package Game;
 
+import Shared.Color;
+import Shared.Value;
+import com.google.common.base.Strings;
 import com.google.common.collect.HashBiMap;
 import com.sun.istack.internal.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
-    private HashBiMap<Square, List<Integer>> squares = HashBiMap.create(64);
-    private static final HashBiMap<List<Integer>, String> squareNames = HashBiMap.create(64);
-
-    static {
-        String names = "abcdefgh";
-        for (int row = 0; row < 8; row++)
-            for (int column = 0; column < 8; column++) {
-                ArrayList<Integer> coordinates = new ArrayList<>();
-                coordinates.add(row);
-                coordinates.add(column);
-                squareNames.put(coordinates, names.charAt(column) + Integer.toString(row + 1));
-            }
-    }
+    private final Square[][] squares;
 
     public final Color color;
     public final Character name;
@@ -29,50 +19,51 @@ public class Board {
     public Board(Color color, Character name) {
         this.color = color;
         this.name = name;
-        setupSquares();
+        this.squares = setupSquares();
         if (color != Color.NONE) {
             setupPieces();
         }
     }
 
-    private void setupSquares() {
+    private Square[][] setupSquares() {
         Square square;
-        int[] coordinate;
         Color currentColor = Color.BLACK;
-        for (int row = 0; row < 8; row++)
+        ArrayList<Square[]> allSquares = new ArrayList<>(64);
+        ArrayList<Square> squareRow;
+        for (int row = 0; row < 8; row++) {
+            squareRow = new ArrayList<>(8);
+            currentColor = currentColor.opposite();
             for (int column = 0; column < 8; column++) {
-                square = new Square(currentColor, this);
-                ArrayList<Integer> coordinates = new ArrayList<>();
-                coordinates.add(row);
-                coordinates.add(column);
-                addSquareAt(coordinates, square);
+                square = new Square(this, currentColor, row, column);
+                squareRow.add(square);
                 currentColor = currentColor.opposite();
             }
+            allSquares.add(squareRow.toArray(new Square[8]));
+        }
+        return allSquares.toArray(new Square[8][]);
     }
 
     private void setupPieces() {
         //pawns
-        int row; // row that pawns start out on
-
-        row = 1;
-        if (color == Color.BLACK)row = 6;
+        int pawnRow = 6;
+        if (color == Color.BLACK)pawnRow = 1;
 
         for (int column = 0; column < 8; column++) {
-            setPiece(row, column, new Piece(Value.PAWN, color));
+            setPiece(pawnRow, column, new Piece(Value.PAWN, color));
         }
 
         //other pieces
-        row = 0;
-        if (color == Color.BLACK)row = 7;
+        int baseRow = 7;
+        if (color == Color.BLACK) baseRow = 0;
 
-        setPiece(row, 0, new Piece(Value.ROOK, color));
-        setPiece(row, 1, new Piece(Value.KNIGHT, color));
-        setPiece(row, 2, new Piece(Value.BISHOP, color));
-        setPiece(row, 3, new Piece(Value.QUEEN, color));
-        setPiece(row, 4, new Piece(Value.KING, color));
-        setPiece(row, 5, new Piece(Value.BISHOP, color));
-        setPiece(row, 6, new Piece(Value.KNIGHT, color));
-        setPiece(row, 7, new Piece(Value.ROOK, color));
+        setPiece(baseRow, 0, new Piece(Value.ROOK, color));
+        setPiece(baseRow, 1, new Piece(Value.KNIGHT, color));
+        setPiece(baseRow, 2, new Piece(Value.BISHOP, color));
+        setPiece(baseRow, 3, new Piece(Value.QUEEN, color));
+        setPiece(baseRow, 4, new Piece(Value.KING, color));
+        setPiece(baseRow, 5, new Piece(Value.BISHOP, color));
+        setPiece(baseRow, 6, new Piece(Value.KNIGHT, color));
+        setPiece(baseRow, 7, new Piece(Value.ROOK, color));
 
     }
 
@@ -88,18 +79,10 @@ public class Board {
      * @return The distance between the squares.
      */
     public static int[] calculateDistance(Square sourceSquare, Square destinationSquare){
-        List<Integer> c1 = sourceSquare.board.getCoordinates(sourceSquare);
-        List<Integer> c2 = destinationSquare.board.getCoordinates(destinationSquare);
-
-        int x1 = c1.get(0);
-        int y1 = c1.get(1);
-        int x2 = c2.get(0);
-        int y2 = c2.get(1);
-
-        int dx = x2 - x1;
-        int dy = y1 - y2;
-
-        return new int[]{dx, dy};
+        return new int[]{
+                destinationSquare.row - sourceSquare.row,
+                sourceSquare.column - destinationSquare.column
+        };
     }
 
     /**
@@ -124,10 +107,6 @@ public class Board {
         return isUnderAttack(kingSquare, color.opposite());
     }
 
-    private void addSquareAt(List<Integer> coordinates, Square square) {
-        squares.inverse().put(coordinates, square);
-    }
-
     /**
      * Calculate all squares a given piece can move to.
      * <p>
@@ -146,15 +125,14 @@ public class Board {
         Square testSquare;
         Square square = getSquare(piece);
         Color player = piece.getColor();
-        ArrayList<Integer> coordinates = (ArrayList<Integer>) getCoordinates(square);
-        int row = coordinates.get(0);
-        int column = coordinates.get(1);
+        int row = square.row;
+        int column = square.column;
         if (piece.value == Value.PAWN) {
-            int direction = 1;
-            int startRow = 1;
+            int direction = -1;
+            int startRow = 6;
             if (player == Color.BLACK) {
-                direction = -1;
-                startRow = 6;
+                direction = 1;
+                startRow = 1;
             }
             testSquare = getSquare(row + direction, column);
             if (getPiece(testSquare) == null){
@@ -167,8 +145,8 @@ public class Board {
                 }
             }
         }else if (piece.value == Value.KING){
-            int baseRow = 0;
-            if (piece.getColor() == Color.BLACK) baseRow = 7;
+            int baseRow = 7;
+            if (piece.getColor() == Color.BLACK) baseRow = 0;
             if (row == baseRow && column == 4){
                 if (!inCheck()){
                     testSquare = getSquare(row, column-2);
@@ -199,38 +177,37 @@ public class Board {
         ArrayList<Square> result = new ArrayList<>(0);
         Square square = getSquare(piece);
         Color player = piece.getColor();
-        ArrayList<Integer> coordinates = (ArrayList<Integer>) getCoordinates(square);
-        int row = coordinates.get(0);
-        int column = coordinates.get(1);
+        int row = square.row;
+        int column = square.column;
         switch (piece.value) {
             case PAWN: {
                 int direction = 1;
                 if (player == Color.BLACK) direction = -1;
                 row += direction;
-                result.add(getSquare(row, column + 1));
-                result.add(getSquare(row, column - 1));
+                addIfValidSquare(result, getSquare(row, column + 1), player);
+                addIfValidSquare(result, getSquare(row, column - 1), player);
                 break;
             }
             case KNIGHT: {
-                result.add(getSquare(row + 1, column + 2));
-                result.add(getSquare(row + 1, column - 2));
-                result.add(getSquare(row + 2, column + 1));
-                result.add(getSquare(row + 2, column - 1));
-                result.add(getSquare(row - 1, column + 2));
-                result.add(getSquare(row - 1, column - 2));
-                result.add(getSquare(row - 2, column + 1));
-                result.add(getSquare(row - 2, column - 1));
+                addIfValidSquare(result, getSquare(row + 1, column + 2), player);
+                addIfValidSquare(result, getSquare(row + 1, column - 2), player);
+                addIfValidSquare(result, getSquare(row + 2, column + 1), player);
+                addIfValidSquare(result, getSquare(row + 2, column - 1), player);
+                addIfValidSquare(result, getSquare(row - 1, column + 2), player);
+                addIfValidSquare(result, getSquare(row - 1, column - 2), player);
+                addIfValidSquare(result, getSquare(row - 2, column + 1), player);
+                addIfValidSquare(result, getSquare(row - 2, column - 1), player);
                 break;
             }
             case KING: {
-                result.add(getSquare(row + 1, column - 1));
-                result.add(getSquare(row + 1, column));
-                result.add(getSquare(row + 1, column + 1));
-                result.add(getSquare(row, column - 1));
-                result.add(getSquare(row, column + 1));
-                result.add(getSquare(row - 1, column - 1));
-                result.add(getSquare(row - 1, column));
-                result.add(getSquare(row - 1, column + 1));
+                addIfValidSquare(result, getSquare(row + 1, column - 1), player);
+                addIfValidSquare(result, getSquare(row + 1, column), player);
+                addIfValidSquare(result, getSquare(row + 1, column + 1), player);
+                addIfValidSquare(result, getSquare(row, column - 1), player);
+                addIfValidSquare(result, getSquare(row, column + 1), player);
+                addIfValidSquare(result, getSquare(row - 1, column - 1), player);
+                addIfValidSquare(result, getSquare(row - 1, column), player);
+                addIfValidSquare(result, getSquare(row - 1, column + 1), player);
                 break;
             }
             default: {
@@ -240,70 +217,106 @@ public class Board {
                     case BISHOP: {
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchColumn != column && ++searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(++searchColumn) != column && ++searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchColumn != column && --searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(++searchColumn) != column && --searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column && ++searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column && ++searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column && --searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column && --searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         break;
                     }
                     case ROOK: {
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchRow != row) result.add(getSquare(searchRow, searchColumn));
+                        while (wrapRow(++searchRow) != row &&
+                                addIfValidSquare(result,
+                                                 getSquare(searchRow, searchColumn),
+                                                 player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchRow != row) result.add(getSquare(searchRow, searchColumn));
+                        while (wrapRow(--searchRow) != row &&
+                                addIfValidSquare(result,
+                                                 getSquare(searchRow, searchColumn),
+                                                 player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column &&
+                                addIfValidSquare(result,
+                                                 getSquare(searchRow, searchColumn),
+                                                 player))
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         break;
                     }
                     case QUEEN: {
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchColumn != column && ++searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(++searchColumn) != column && ++searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchColumn != column && --searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(++searchColumn) != column && --searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column && ++searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column && ++searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column && --searchRow != row)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column && --searchRow != row &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (++searchRow != row) result.add(getSquare(searchRow, searchColumn));
+                        while (wrapRow(++searchRow) != row &&
+                                addIfValidSquare(result,
+                                                 getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchRow != row) result.add(getSquare(searchRow, searchColumn));
+                        while (wrapRow(--searchRow) != row &&
+                                addIfValidSquare(result,
+                                                 getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         searchRow = row;
                         searchColumn = column;
-                        while (--searchColumn != column)
-                            result.add(getSquare(searchRow, searchColumn));
+                        while (wrapColumn(--searchColumn) != column &&
+                            addIfValidSquare(result,
+                                             getSquare(searchRow, searchColumn),
+                                             player));
                         break;
                     }
                 }
@@ -312,11 +325,21 @@ public class Board {
         return result;
     }
 
+    private boolean addIfValidSquare(ArrayList<Square> result, Square square, Color player) {
+        if (square == null) return false;
+        Piece piece = getPiece(square);
+        if (piece != null) {
+            if (piece.getColor() != player) result.add(square);
+            return false;  // to stop loop
+        }
+        result.add(square);
+        return true;
+    }
+
     public boolean isUnderAttack(Square square, Color color) {
         Board board = square.board;
-        ArrayList<Integer> coordinates = (ArrayList<Integer>)board.getCoordinates(square);
-        int row = coordinates.get(0);
-        int column = coordinates.get(1);
+        int row = square.row;
+        int column = square.column;
         int searchRow;
         int searchColumn;
         int result; /*Pawn*/
@@ -425,22 +448,19 @@ public class Board {
         return state.inverse().get(piece);
     }
 
-    public Square getSquare(List<Integer> coordinates) {
-        int row = coordinates.get(0);
-        int column = coordinates.get(1);
-        if (color == Color.NONE) row %= 8;
-        column %= 8;
-        ArrayList<Integer> newCoordinates = new ArrayList<>();
-        newCoordinates.add(row);
-        newCoordinates.add(column);
-        return squares.inverse().get(newCoordinates);
+    public Square getSquare(int[] coordinates) {
+        int row = coordinates[0];
+        int column = coordinates[1];
+        return getSquare(row, column);
     }
-
     public Square getSquare(int row, int column) {
-        ArrayList<Integer> coordinates = new ArrayList<>();
-        coordinates.add(row);
-        coordinates.add(column);
-        return getSquare(coordinates);
+        row = wrapRow(row);
+        column = wrapColumn(column);
+        try {
+            return squares[row][column];
+        } catch (ArrayIndexOutOfBoundsException e){
+            return null;
+        }
     }
 
     public Square getSquare(String squareName) {
@@ -452,7 +472,7 @@ public class Board {
         return state.get(square);
     }
 
-    public Piece getPiece(List<Integer> coordinates) {
+    public Piece getPiece(int[] coordinates) {
         return getPiece(getSquare(coordinates));
     }
 
@@ -464,21 +484,41 @@ public class Board {
         return getPiece(getSquare(squareName));
     }
 
-
-    public List<Integer> getCoordinates(Square square) {
-        return squares.get(square);
+    public int[] getCoordinates(Piece piece) {
+        return state.inverse().get(piece).coordinates;
     }
 
-    public List<Integer> getCoordinates(Piece piece) {
-        return getCoordinates(state.inverse().get(piece));
-    }
-
-    public List<Integer> getCoordinates(int row, int column) {
-        return getCoordinates(getSquare(row, column));
-    }
-
-    public static List<Integer> getCoordinates(String squareName) {
-        return squareNames.inverse().get(squareName);
+    public static int[] getCoordinates(String squareName) {
+        squareName = squareName.toLowerCase();
+        int row = 8-Integer.parseInt(squareName.substring(1));
+        int column = 0;
+        switch (squareName.charAt(0)){
+            case 'a':
+                column = 0;
+                break;
+            case 'b':
+                column = 1;
+                break;
+            case 'c':
+                column = 2;
+                break;
+            case 'd':
+                column = 3;
+                break;
+            case 'e':
+                column = 4;
+                break;
+            case 'f':
+                column = 5;
+                break;
+            case 'g':
+                column = 6;
+                break;
+            case 'h':
+                column = 7;
+                break;
+        }
+        return new int[]{row, column};
     }
 
 
@@ -486,7 +526,7 @@ public class Board {
         state.put(square, piece);
     }
 
-    public void setPiece(List<Integer> coordinates, Piece piece) {
+    public void setPiece(int[] coordinates, Piece piece) {
         setPiece(getSquare(coordinates), piece);
     }
 
@@ -507,7 +547,7 @@ public class Board {
         removePiece(getSquare(piece));
     }
 
-    public void removePiece(List<Integer> coordinates) {
+    public void removePiece(int[] coordinates) {
         removePiece(getSquare(coordinates));
     }
 
@@ -530,7 +570,7 @@ public class Board {
         return popPiece(getSquare(piece));
     }
 
-    public Piece popPiece(List<Integer> coordinates) {
+    public Piece popPiece(int[] coordinates) {
         return popPiece(getSquare(coordinates));
     }
 
@@ -553,7 +593,7 @@ public class Board {
         return replacePiece(getSquare(replace), with);
     }
 
-    public Piece replacePiece(List<Integer> coordinates, Piece with) {
+    public Piece replacePiece(int[] coordinates, Piece with) {
         return replacePiece(getSquare(coordinates), with);
     }
 
@@ -566,19 +606,18 @@ public class Board {
     }
 
 
-    public String getSquareName(Square square) {
-        return getSquareName(getCoordinates(square));
+    public static String getSquareName(Square square) {
+        return getSquareName(square.coordinates);
     }
 
-    public static String getSquareName(List<Integer> coordinates) {
-        return squareNames.get(coordinates);
+    public static String getSquareName(int[] coordinates) {
+        int row = coordinates[0];
+        int column = coordinates[1];
+        return getSquareName(row, column);
     }
 
     public static String getSquareName(int row, int column) {
-        ArrayList<Integer> coordinates = new ArrayList<>();
-        coordinates.add(row);
-        coordinates.add(column);
-        return squareNames.get(coordinates);
+        return "abcdefgh".substring(column, column+1) + Integer.toString(8-row);
     }
 
 
@@ -598,8 +637,8 @@ public class Board {
         return 1;
     }
 
-    public int testSquare(List<Integer> coordinates, Color color, Value value) {
-        return testSquare(getSquare(coordinates.get(0), coordinates.get(1)), color, value);
+    public int testSquare(int[] coordinates, Color color, Value value) {
+        return testSquare(getSquare(coordinates[0], coordinates[1]), color, value);
     }
 
     public int testSquare(int row, int column, Color color, Value value) {
@@ -612,6 +651,7 @@ public class Board {
 
 
     public Piece[] getPieces(@Nullable Value value, @Nullable Color player) {
+        // parameters optional
         Piece[] allPieces = (state.inverse().keySet().toArray(
                 new Piece[state.inverse().keySet().size()]));
         if (value == null && player == null) {
@@ -624,8 +664,22 @@ public class Board {
     }
 
     private boolean testPiece(Piece piece, @Nullable Value value, @Nullable Color player){
-        if (value != null && piece.value != value) return false;
-        return !(player != null && piece.getColor() != player);
+        return !(value != null && piece.value != value) &&
+               !(player != null && piece.getColor() != player);
+    }
+
+    public int wrapRow(int row){
+        if (color == Color.NONE) {
+            row %= 8;
+            if (row<0) row+= 8;  // stupid java % operator not working like in python
+        }
+        return row;
+    }
+
+    public int wrapColumn(int column){
+        column %= 8;
+        if (column<0) column += 8;
+        return column;
     }
 
 }

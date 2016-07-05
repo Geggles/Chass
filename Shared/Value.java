@@ -1,4 +1,4 @@
-package Game;
+package Shared;
 
 public enum Value {
     PAWN(1, 'P', '\u2659', '\u265F'),
