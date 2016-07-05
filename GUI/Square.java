@@ -3,7 +3,6 @@ package GUI;
 import Shared.Color;
 import com.trolltech.qt.core.Qt;
 import com.trolltech.qt.gui.*;
-import com.trolltech.qt.svg.QGraphicsSvgItem;
 
 public class Square extends QGraphicsView {
     public final int row;
