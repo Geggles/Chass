@@ -1,7 +1,6 @@
 package Game;
 
 public enum MoveType {
-    PROMOTION,
     CASTLE,
     DROP,
     HOSTAGE_EXCHANGE,
@@ -14,9 +13,6 @@ public enum MoveType {
 
     public static MoveType of(Move move) {
         if (move == null) return null;
-        if (move.promotion != null) {
-            return PROMOTION;
-        }
         if (move.pieceNames.length == 1 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 0){  // castle:
