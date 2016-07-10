@@ -23,7 +23,7 @@ public enum MoveType {
                 move.squareNames.length == 1){  // drop
             return DROP;
         }
-        if (move.pieceNames.length == 2 &&
+        if (move.pieceNames.length >= 2 &&
                 move.boardNames.length == 0 &&
                 move.squareNames.length == 1) {  // hostage exchange
             return HOSTAGE_EXCHANGE;

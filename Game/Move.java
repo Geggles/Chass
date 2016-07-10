@@ -7,7 +7,7 @@ import javafx.util.Pair;
  * Specification for move types:
  *   <All>:
  *      state: Either null if move did not lead to a special game state or
- *               '+' if move lead to a inCheck or
+ *               '+' if move lead to a check or
  *               '#' if move lead to a checkmate or
  *               '@' if move lead to a stalemate
  *      promotion: either null if not promotion happened or
@@ -24,8 +24,9 @@ import javafx.util.Pair;
  *      squareNames: square the piece was dropped to
  *
  *   Hostage Exchange:
- *      pieceNames: The piece that was given to the opponent
- *                  The piece that was dropped
+ *      pieceNames: The piece that was dropped
+ *                  The pieces that were given to the opponent
+ *
  *      boardNames: Empty
  *      squareNames: Square the piece was dropped to
  *
@@ -49,7 +50,12 @@ import javafx.util.Pair;
  *      squareNames: Square the piece started out on
  *                   Square the capture happened on
  *   En passant:
- *      special case of capture
+ *      pieceNames: Empty
+ *      boardNames: Board the capture happened on
+ *                  Board the piece is on after capture
+ *      squareNames: Square the piece started out on
+ *                   Square the piece ended up on
+ *
  *
  *   Steal:
  *      pieceNames: Piece that has moved
@@ -90,7 +96,7 @@ public class Move {
         this.boardNames = boardNames;
         this.squareNames = squareNames;
     }
-    public Pair<Character[], String> getSourceBoardsAndSquareNames(){
+    public Pair<Character[], String> getSource(){
         MoveType moveType = MoveType.of(this);
         if (moveType == null) return null;
         switch (moveType) {
@@ -110,14 +116,13 @@ public class Move {
             case CAPTURE:
             case EN_PASSANT:
             case TRANSLATE:
-            case PROMOTION:
                 return new Pair<>(new Character[]{this.boardNames[0]}, this.squareNames[0]);
             case STEAL:
                 return new Pair<>(new Character[]{'C'}, this.squareNames[0]);
         }
         return null;
     }
-    public Pair<Character[], String> getDestinationBoardsAndSquareNames(){
+    public Pair<Character[], String> getDestination(){
         MoveType moveType = MoveType.of(this);
         if (moveType == null) return null;
         switch (moveType) {
@@ -140,7 +145,6 @@ public class Move {
             case CAPTURE:
             case EN_PASSANT:
             case TRANSLATE:
-            case PROMOTION:
                 return new Pair<>(new Character[]{this.boardNames[1]}, this.squareNames[1]);
             case STEAL:
                 return new Pair<>(new Character[]{'C'}, this.squareNames[1]);

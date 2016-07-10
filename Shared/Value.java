@@ -27,7 +27,7 @@ public enum Value {
         return this.blackSymbol;
     }
 
-    public static Value getValueFromName(Character name){
+    public static Value of(Character name){
         switch (name){
             case 'P': return PAWN;
             case 'B': return BISHOP;

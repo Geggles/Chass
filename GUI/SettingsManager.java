@@ -2,6 +2,7 @@ package GUI;
 
 import com.trolltech.qt.core.QSettings;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class SettingsManager {
     }
 
     public List<String> allKeys(){
+        settings.allKeys();
         return settings.allKeys();
     }
 
@@ -56,6 +58,7 @@ public class SettingsManager {
     public void flush(){
         buffer.entrySet().stream().forEach(
                 entry -> settings.setValue(entry.getKey(), entry.getValue()));
+        settings.sync();
     }
 
     /**
