@@ -8,6 +8,9 @@ import com.sun.istack.internal.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class Board {
     private HashBiMap<Square, Piece> state = HashBiMap.create(32);
@@ -107,6 +110,10 @@ public class Board {
         return isUnderAttack(kingSquare, color.opposite());
     }
 
+    public Square[] canGoTo(Square square){
+        return canGoTo(getPiece(square));
+    }
+
     /**
      * Calculate all squares a given piece can move to.
      * <p>
@@ -149,17 +156,29 @@ public class Board {
             if (piece.getColor() == Color.BLACK) baseRow = 0;
             if (row == baseRow && column == 4){
                 if (!inCheck()){
-                    testSquare = getSquare(row, column-2);
+
+                    testSquare = getSquare(row, column-1);
                     if (getPiece(testSquare) == null &&
-                            !isUnderAttack(testSquare, color.opposite()) &&
-                            !isUnderAttack(getSquare(row, column-1), color.opposite())){
-                        result.add(testSquare);
+                            !isUnderAttack(testSquare, color.opposite())){
+                        testSquare = getSquare(row, column-3);
+                        if (getPiece(testSquare) == null &&
+                                !isUnderAttack(testSquare, color.opposite())){
+                            testSquare = getSquare(row, column-2);
+                            if (getPiece(testSquare) == null &&
+                                    !isUnderAttack(testSquare, color.opposite())){
+                                result.add(testSquare);
+                            }
+                        }
                     }
-                    testSquare = getSquare(row, column+2);
+
+                    testSquare = getSquare(row, column+1);
                     if (getPiece(testSquare) == null &&
-                            !isUnderAttack(testSquare, color.opposite()) &&
-                            !isUnderAttack(getSquare(row, column+1), color.opposite())){
-                        result.add(testSquare);
+                            !isUnderAttack(testSquare, color.opposite())){
+                        testSquare = getSquare(row, column+2);
+                        if (getPiece(testSquare) == null &&
+                                !isUnderAttack(testSquare, color.opposite())){
+                            result.add(testSquare);
+                        }
                     }
                 }
             }
@@ -181,8 +200,8 @@ public class Board {
         int column = square.column;
         switch (piece.value) {
             case PAWN: {
-                int direction = 1;
-                if (player == Color.BLACK) direction = -1;
+                int direction = -1;
+                if (player == Color.BLACK) direction = 1;
                 row += direction;
                 addIfValidSquare(result, getSquare(row, column + 1), player);
                 addIfValidSquare(result, getSquare(row, column - 1), player);
@@ -217,25 +236,25 @@ public class Board {
                     case BISHOP: {
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(++searchColumn) != column && ++searchRow != row &&
+                        while (wrapColumn(++searchColumn) != column && wrapRow(++searchRow) != row&&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(++searchColumn) != column && --searchRow != row &&
+                        while (wrapColumn(++searchColumn) != column && wrapRow(--searchRow) != row&&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(--searchColumn) != column && ++searchRow != row &&
+                        while (wrapColumn(--searchColumn) != column && wrapRow(++searchRow) != row&&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(--searchColumn) != column && --searchRow != row &&
+                        while (wrapColumn(--searchColumn) != column && wrapRow(--searchRow) != row&&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
@@ -262,61 +281,69 @@ public class Board {
                                                  player))
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(--searchColumn) != column &&
+                        while (wrapColumn(++searchColumn) != column &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
                         break;
                     }
                     case QUEEN: {
+                        // diagonal bottom right
                         searchRow = row;
                         searchColumn = column;
                         while (wrapColumn(++searchColumn) != column && ++searchRow != row &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
+                        // diagonal top right
                         searchRow = row;
                         searchColumn = column;
                         while (wrapColumn(++searchColumn) != column && --searchRow != row &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
+                        // diagonal bottom left
                         searchRow = row;
                         searchColumn = column;
                         while (wrapColumn(--searchColumn) != column && ++searchRow != row &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
+                        // diagonal top left
                         searchRow = row;
                         searchColumn = column;
                         while (wrapColumn(--searchColumn) != column && --searchRow != row &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
+                        // straight bottom
                         searchRow = row;
                         searchColumn = column;
                         while (wrapRow(++searchRow) != row &&
                                 addIfValidSquare(result,
                                                  getSquare(searchRow, searchColumn),
                                              player));
+                        // straight top
                         searchRow = row;
                         searchColumn = column;
                         while (wrapRow(--searchRow) != row &&
                                 addIfValidSquare(result,
                                                  getSquare(searchRow, searchColumn),
                                              player));
+                        // straight left
                         searchRow = row;
                         searchColumn = column;
                         while (wrapColumn(--searchColumn) != column &&
                             addIfValidSquare(result,
                                              getSquare(searchRow, searchColumn),
                                              player));
+                        // straight right
                         searchRow = row;
                         searchColumn = column;
-                        while (wrapColumn(--searchColumn) != column &&
-                            addIfValidSquare(result,
-                                             getSquare(searchRow, searchColumn),
-                                             player));
+                        while (wrapColumn(++searchColumn) != column &&
+                                addIfValidSquare(result,
+                                        getSquare(searchRow, searchColumn),
+                                        player));
                         break;
                     }
                 }
@@ -329,10 +356,11 @@ public class Board {
         if (square == null) return false;
         Piece piece = getPiece(square);
         if (piece != null) {
-            if (piece.getColor() != player) result.add(square);
+            if (piece.getColor() != player &&
+                    !result.contains(square)) result.add(square);
             return false;  // to stop loop
         }
-        result.add(square);
+        if (!result.contains(square)) result.add(square);
         return true;
     }
 
@@ -651,14 +679,18 @@ public class Board {
 
 
     public Piece[] getPieces(@Nullable Value value, @Nullable Color player) {
-        // parameters optional
-        Piece[] allPieces = (state.inverse().keySet().toArray(
-                new Piece[state.inverse().keySet().size()]));
+        List<Piece> pieceList =
+                state
+                .values()
+                .stream()
+                .filter(piece -> piece != null)
+                .collect(Collectors.toList());
         if (value == null && player == null) {
             //trivial case
-            return allPieces;
+            return pieceList.toArray(new Piece[pieceList.size()]);
         }
-        return  (Arrays.stream(allPieces)
+        return  (pieceList
+                .stream()
                 .filter(piece -> this.testPiece(piece, value, player))
                 .toArray(size -> new Piece[size]));
     }

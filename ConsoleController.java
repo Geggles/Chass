@@ -3,6 +3,9 @@ import Shared.Color;
 import Game.Persistence;
 import Shared.Value;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class ConsoleController implements Controller {
@@ -39,9 +42,17 @@ public class ConsoleController implements Controller {
         }
     }
 
+    private Path saveGamePath = Paths.get(new File("").toURI());
+
     public ConsoleController() {
         new ConsoleController(true);
     }
+
+    @Override
+    public void setSavegamePath(Path path){
+        saveGamePath = path;
+    }
+
     public ConsoleController(boolean unicode) {
         this.unicode = unicode;
     }
@@ -58,7 +69,7 @@ public class ConsoleController implements Controller {
             System.out.println("Enter move String:");
             String in = input.nextLine();
             if (in.equals("save")){
-                Persistence.saveMoves(gameController.getMoves());
+                //saveManager.saveMoves(gameController.getMoveHistoryStrings());
                 continue;
             }
             if (in.startsWith("load ")){

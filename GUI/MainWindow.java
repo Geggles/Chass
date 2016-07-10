@@ -11,6 +11,6 @@ public class MainWindow extends QMainWindow{
 
     @Override
     protected void closeEvent(QCloseEvent event) {
-        signals.mainWinClosed.emit();
+        signals.exitApplication.emit();
     }
 }

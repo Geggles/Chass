@@ -1,6 +1,8 @@
 package GUI;
 
 import Shared.Color;
+import com.trolltech.qt.core.QEvent;
+import com.trolltech.qt.core.QObject;
 import com.trolltech.qt.core.Qt;
 import com.trolltech.qt.gui.*;
 import com.trolltech.qt.svg.QGraphicsSvgItem;
@@ -13,8 +15,8 @@ public class Square extends QGraphicsView {
 
     private boolean selected = false;
     private boolean highlighted = false;
-    private QColor backgroundColor;
-    private QColor backgroundHighlightColor;
+    private QBrush backgroundUnhighlightedBrush;
+    private QBrush backgroundHighlightedBrush;
     private QCursor unselectedCursor;
     private QCursor selectedCursor;
 
@@ -24,23 +26,50 @@ public class Square extends QGraphicsView {
         this.column = column;
         this.color = color;
         this.coordinates = new int[]{row, column};
-        setAutoFillBackground(true);
+
+        setScene(new QGraphicsScene(this));
+        setStyleSheet("border-style: none; background: transparent;");
+        setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff);  //necessary?
+        setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff); //necessary?
     }
+
+    @Override
+    protected void mouseMoveEvent(QMouseEvent event) {
+        event.ignore();
+    }
+
+    @Override
+    protected void mouseReleaseEvent(QMouseEvent event) {
+        event.ignore();
+    }
+
 
     /**
      * Set the background color of this square to color
      */
-    public void setBackgroundColor(QColor color){
-        backgroundColor = color;
+    public void setBackgroundUnhighlightedBrush(QBrush brush){
+        backgroundUnhighlightedBrush = brush;
         applyBackgroundColor();
+    }
+
+    public QBrush getBackgroundUnhighlightedBrush(){
+        return backgroundUnhighlightedBrush;
     }
 
     /**
      * Set the background color when highlighted of this square to color
      */
-    public void setBackgroundHighlightColor(QColor color){
-        backgroundHighlightColor = color;
+    public void setBackgroundHighlightedBrush(QBrush brush){
+        backgroundHighlightedBrush = brush;
         applyBackgroundColor();
+    }
+
+    public QBrush getBackgroundHighlightedBrush(){
+        return backgroundHighlightedBrush;
+    }
+
+    public QBrush getBackgroundBrush(){
+        return isSelected()? backgroundHighlightedBrush: backgroundUnhighlightedBrush;
     }
 
     private void applyBackgroundColor(){
@@ -48,10 +77,11 @@ public class Square extends QGraphicsView {
     }
 
     private void applyBackgroundColor(boolean highlighted){
-        QPalette palette = palette();
+/*        QPalette palette = palette();
         palette.setColor(QPalette.ColorRole.Window,
                 highlighted? backgroundHighlightColor: backgroundColor);
-        setPalette(palette);
+        setPalette(palette);*/
+        setBackgroundBrush(highlighted? backgroundHighlightedBrush : backgroundUnhighlightedBrush);
     }
 
     public boolean isSelected(){
@@ -70,6 +100,9 @@ public class Square extends QGraphicsView {
     public void setHighlighted(boolean state){
         highlighted = state;
         applyBackgroundColor(state);
+        if (!state){
+            setCursor(unselectedCursor);
+        }
     }
 
     public void setUnselectedCursor(QCursor unselectedCursor) {
@@ -80,17 +113,32 @@ public class Square extends QGraphicsView {
         this.selectedCursor = selectedCursor;
     }
 
-    public void displayPiece(QGraphicsItemInterface item){
+    public void display(QGraphicsSvgItem item){
         QGraphicsScene scene = scene();
+        if (item == null){
+            scene.clear();
+            return;
+        }
         scene.addItem(item);
+        resizeContent();
+    }
+
+    private void resizeContent(){
+        resetTransform();
+        translate(width()/2, height()/2);
+        fitInView(scene().itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio);
     }
 
     @Override
     protected void resizeEvent(QResizeEvent event) {
-        resetTransform();
-        translate(width()/2, height()/2);
-        fitInView(scene().itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio);
+        resizeContent();
         // scale(Math.round(height()/27 * 0.65 * 10000.0)/10000.0,
         // Math.round(height()/27 * 0.65 * 10000.0)/10000.0);  // *0.65/27 just works...
+    }
+
+    public void setHovered(boolean state) {
+        if (state){
+
+        }
     }
 }

@@ -1,6 +1,7 @@
 package GUI;
 
 import com.sun.istack.internal.NotNull;
+import com.trolltech.qt.gui.QWidget;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,6 +26,7 @@ public class SettingSetSignalFilter {
     public void slot(String key, Object value)
             throws IllegalAccessException, NoSuchMethodException, InvocationTargetException{
         if (this.key == null || key.equals(this.key)){
+            //System.out.println(((Board) ((QWidget) receiver).parentWidget()).name);
             listeners.stream().forEach(listener -> callSlot(
                     listener.receiver, listener.method, listener.type, value)
             );
