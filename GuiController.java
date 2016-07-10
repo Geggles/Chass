@@ -48,6 +48,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.repeatMove.connect(this, "onRepeatMove()");
         signals.exitApplication.connect(this, "onExitApplication()");
         signals.boardSelected.connect(this, "onBoardSelected(Board)");
+        signals.boardDeselected.connect(this, "onBoardDeselected(Board)");
 
         centralWidget = new CentralWidget(mainWin, "centralWidget");
         mainWin.setCentralWidget(centralWidget);
@@ -67,8 +68,28 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void onBoardSelected(Board board){
         if (moveDecisionSquareName != null){
-
+            switchPieces(
+                    (Board) centralWidget.getSelectedSquare().parentWidget(),
+                    board,
+                    moveDecisionSquareName);
         }
+    }
+
+    private void onBoardDeselected(Board board){
+        if (moveDecisionSquareName != null){
+            switchPieces(
+                    (Board) centralWidget.getSelectedSquare().parentWidget(),
+                    board,
+                    moveDecisionSquareName);
+        }
+    }
+
+    private void switchPieces(Board board1, Board board2, String squareName){
+        int[] coordinates = Game.Board.getCoordinates(squareName);
+        Piece piece1 = gameController.getBoard(board1.name).getPiece(squareName);
+        Piece piece2 = gameController.getBoard(board2.name).getPiece(squareName);
+        board1.squares[coordinates[0]][coordinates[1]].display(getPieceIcon(piece2));
+        board2.squares[coordinates[0]][coordinates[1]].display(getPieceIcon(piece1));
     }
 
     private void onRewindMove(){
@@ -256,6 +277,7 @@ public class GuiController extends QSignalEmitter implements Controller{
     private void doMove(Move move){
         gameController.addMove(move);
         centralWidget.unPersistentlyHighlightAllSquares();
+        moveDecisionSquareName = null;
         stopDragging();
         updateGuiToGame();
     }
@@ -326,6 +348,8 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void onSquareSelected(Square sourceSquare){
         // when hovered, sets square to selected if valid
+
+        if (moveDecisionSquareName != null) return;
 
         Board sourceBoard = (Board) sourceSquare.parentWidget();
         Game.Board sourceGameBoard = gameController.getBoard(sourceBoard.name);
@@ -430,6 +454,13 @@ public class GuiController extends QSignalEmitter implements Controller{
     private QGraphicsSvgItem getPieceIcon(String pieceName, Color color){
         String key = centralWidget.objectName() + "-" +
                 (color == Color.WHITE? "white": "black") + pieceName;
+        return new QGraphicsSvgItem((String) settings.getValue(key));
+    }
+
+    private QGraphicsSvgItem getPieceIcon(Game.Piece piece){
+        if (piece == null) return null;
+        String key = centralWidget.objectName() + "-" +
+                (piece.getColor() == Color.WHITE? "white": "black") + piece.value.fullName;
         return new QGraphicsSvgItem((String) settings.getValue(key));
     }
 

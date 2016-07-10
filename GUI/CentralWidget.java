@@ -168,7 +168,7 @@ public class CentralWidget extends QWidget {
                     square = (Square) target;
                     unHighlightAllSquares();
                     deselectSquare();
-                    signals.squareDeSelected.emit(square);
+                    signals.squareDeselected.emit(square);
                     return true;
                 }
                 break;
@@ -213,6 +213,11 @@ public class CentralWidget extends QWidget {
                             x - dragSquare.width() / 2,
                             y - dragSquare.height() / 2);
                     return true;
+                } else {
+                    if (hoveredBoard != null){
+                        signals.boardDeselected.emit(hoveredBoard);
+                        hoveredBoard = null;
+                    }
                 }
 
                 break;

@@ -4,8 +4,7 @@ public enum MoveType {
     CASTLE,
     DROP,
     HOSTAGE_EXCHANGE,
-    SWAP2,
-    SWAP3,
+    SWAP,
     CAPTURE,
     STEAL,
     EN_PASSANT,
@@ -29,14 +28,9 @@ public enum MoveType {
             return HOSTAGE_EXCHANGE;
         }
         if (move.pieceNames.length == 2 &&
-                move.boardNames.length == 4 &&
-                move.squareNames.length == 1) {  // swap2
-            return SWAP2;
-        }
-        if (move.pieceNames.length == 3 &&
-                move.boardNames.length == 6 &&
-                move.squareNames.length == 1) {  // swap3
-            return SWAP3;
+                move.boardNames.length == 2 &&
+                move.squareNames.length == 1) {  // swap
+            return SWAP;
         }
         if (move.pieceNames.length == 2 &&
                 move.boardNames.length == 2 &&
