@@ -383,7 +383,6 @@ public class GuiController extends QSignalEmitter implements Controller{
         if (gameController.inCheck()){
             Pair<Character[], String> source;
             int[] coordinates;
-            // TODO: 10-Jul-16 pers. highligh squares thta can break check
             for (Move validMove:
                     gameController.getAllCheskBreakingMoves(gameController.getCurrentPlayer())){
                 source = validMove.getSource();
