@@ -1,6 +1,7 @@
 package GUI;
 
 import Shared.Color;
+import com.trolltech.qt.core.QEvent;
 import com.trolltech.qt.gui.*;
 
 import java.util.ArrayList;
@@ -95,5 +96,17 @@ public class Board extends QWidget{
         }else {
             resize(width(), width());
         }
+    }
+
+    @Override
+    protected void enterEvent(QEvent event) {
+        signals.boardSelected.emit(this);
+        event.ignore();
+    }
+
+    @Override
+    protected void leaveEvent(QEvent event) {
+        signals.boardDeselected.emit(this);
+        event.ignore();
     }
 }

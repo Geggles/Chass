@@ -31,7 +31,9 @@ public class GuiController extends QSignalEmitter implements Controller{
     private final ArrayList<Value> selectedHostages = new ArrayList<>();
     private int selectedHostageSum = 0;
 
-    private String moveDecisionSquareName = null;
+    private Square moveDecisionSquare = null;  // destination square when selecting board
+    private ArrayList<Board> validBoards = new ArrayList<>();  // boards that can be selected
+    private MoveType decisionType = null;  // type of the move that has to be decided
 
     public GuiController(){
         mainWin = new MainWindow();
@@ -47,8 +49,8 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.rewindMove.connect(this, "onRewindMove()");
         signals.repeatMove.connect(this, "onRepeatMove()");
         signals.exitApplication.connect(this, "onExitApplication()");
-        signals.boardSelected.connect(this, "onBoardSelected(Board)");
-        signals.boardDeselected.connect(this, "onBoardDeselected(Board)");
+        signals.boardSelected.connect(this, "onBoardEnter(Board)");
+        signals.boardDeselected.connect(this, "onBoardLeave(Board)");
 
         centralWidget = new CentralWidget(mainWin, "centralWidget");
         mainWin.setCentralWidget(centralWidget);
@@ -56,9 +58,13 @@ public class GuiController extends QSignalEmitter implements Controller{
         setupGui();
         if (settings.allKeys().size()==0) resetSettings();
         else settings.loadIntoBuffer();
-        gameController.loadMoves(Persistence.moveChain((String) settings.getValue("lastGame")),
+        loadMoves(Persistence.moveChain((String) settings.getValue("lastGame")),
                 QVariant.toInt(settings.getValue("lastPly")));
         updateGuiToGame();
+    }
+
+    private void loadMoves(String[] moveChain, int upToPly) {
+        gameController.loadMoves(moveChain, upToPly);
     }
 
     @Override
@@ -66,30 +72,83 @@ public class GuiController extends QSignalEmitter implements Controller{
         saveGamePath = path;
     }
 
-    private void onBoardSelected(Board board){
-        if (moveDecisionSquareName != null){
-            switchPieces(
-                    (Board) centralWidget.getSelectedSquare().parentWidget(),
-                    board,
-                    moveDecisionSquareName);
-        }
+    private void onBoardEnter(Board board){
+        switchPieces(board, false);
     }
 
-    private void onBoardDeselected(Board board){
-        if (moveDecisionSquareName != null){
-            switchPieces(
-                    (Board) centralWidget.getSelectedSquare().parentWidget(),
-                    board,
-                    moveDecisionSquareName);
-        }
+    private void onBoardLeave(Board board){
+        switchPieces(board, true);
     }
 
-    private void switchPieces(Board board1, Board board2, String squareName){
-        int[] coordinates = Game.Board.getCoordinates(squareName);
-        Piece piece1 = gameController.getBoard(board1.name).getPiece(squareName);
-        Piece piece2 = gameController.getBoard(board2.name).getPiece(squareName);
-        board1.squares[coordinates[0]][coordinates[1]].display(getPieceIcon(piece2));
-        board2.squares[coordinates[0]][coordinates[1]].display(getPieceIcon(piece1));
+    private void switchPieces(Board destinationBoard, boolean switchBack){
+        if (moveDecisionSquare == null) return;
+        if (!validBoards.contains(destinationBoard)) return;
+
+        if (switchBack) QApplication.restoreOverrideCursor();
+        else QApplication.setOverrideCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
+
+/*        Square sourceSquare = (switchBack && decisionType != MoveType.STEAL)?
+                destinationBoard.squares[moveDecisionSquare.row][moveDecisionSquare.column]:
+                centralWidget.getSelectedSquare();*/
+        Square sourceSquare = centralWidget.getSelectedSquare();
+
+        Board sourceBoard = (Board) sourceSquare.parentWidget();
+        Game.Board sourceGameBoard = gameController.getBoard(sourceBoard.name);
+
+        Game.Board destinationGameBoard = gameController.getBoard(destinationBoard.name);
+
+        Piece sourcePiece = sourceGameBoard.getPiece(sourceSquare.coordinates);
+        Piece destinationPiece =
+                (decisionType == MoveType.STEAL? sourceGameBoard: destinationGameBoard)
+                .getPiece(moveDecisionSquare.coordinates);
+
+        Square destinationSquare;
+
+        if (decisionType == MoveType.STEAL){
+            if (!switchBack){
+                sourceSquare.display(null);
+                moveDecisionSquare.display(null);
+
+                destinationSquare = destinationBoard
+                        .squares[moveDecisionSquare.row][moveDecisionSquare.column];
+                sourceSquare =  // opposite board
+                        (destinationBoard.name == 'A'? centralWidget.beta: centralWidget.alpha)
+                                .squares[moveDecisionSquare.row][moveDecisionSquare.column];
+            } else {
+                centralWidget.alpha.squares[moveDecisionSquare.row][moveDecisionSquare.column]
+                        .display(null);
+                centralWidget.beta.squares[moveDecisionSquare.row][moveDecisionSquare.column]
+                        .display(null);
+
+                destinationSquare = moveDecisionSquare;
+            }
+        } else {
+            destinationSquare = destinationBoard.squares
+                    [moveDecisionSquare.row][moveDecisionSquare.column];
+        }
+
+        if(switchBack){
+            centralWidget.deghostifySquare(sourceSquare);
+            centralWidget.deghostifySquare(destinationSquare);
+        } else {
+            centralWidget.ghostifySquare(sourceSquare);
+            centralWidget.ghostifySquare(destinationSquare);
+        }
+
+        destinationSquare.display(getPieceIcon(switchBack?destinationPiece: sourcePiece));
+
+        if (destinationPiece == null){
+            sourceSquare.display(getPieceIcon(switchBack? sourcePiece: null));
+        } else {
+            String destinationPieceName = destinationPiece.value.fullName;
+            Color destinationPieceColor = destinationPiece.getColor();
+            if (decisionType == MoveType.STEAL && !switchBack){
+                destinationPieceColor = destinationPieceColor.opposite();
+            }
+            sourceSquare.display(switchBack?
+                    getPieceIcon(sourcePiece):
+                    getPieceIcon(destinationPieceName, destinationPieceColor));
+        }
     }
 
     private void onRewindMove(){
@@ -111,7 +170,7 @@ public class GuiController extends QSignalEmitter implements Controller{
     private void hostageSelected(Square square){
         Value value = getValueOn(square, gameController.getCurrentPlayer().opposite());
         if (value == null) return;
-        if (centralWidget.isPersistentlyHighlighted(square)){
+        if (centralWidget.isPersistentlyHighlighted(square)){  // hostage already selected
             selectedHostages.remove(value);
             selectedHostageSum -= value.value;
             centralWidget.unPersistentlyHighlightSquare(square);
@@ -178,9 +237,28 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void onCancelMove(){
-        stopDragging();
+        centralWidget.deselectSquare();
         centralWidget.unHighlightAllSquares();
-        //centralWidget.unPersistentlyHighlightAllSquares();
+        centralWidget.deghostifyAllSquares();
+
+        if (moveDecisionSquare != null) {
+            moveDecisionSquare = null;
+            QApplication.restoreOverrideCursor();
+        }
+
+        if (selectedHostages.size() > 0){
+            if (centralWidget.isDragging()){
+                // dragging freed hostage
+                stopDragging();
+            }
+            else {
+                centralWidget.unPersistentlyHighlightAllSquares();
+            }
+            return;
+        }
+        stopDragging();
+        centralWidget.unPersistentlyHighlightAllSquares();
+        updateGuiToGame();
     }
 
     private void onDestinationSelected(Square destinationSquare){
@@ -212,7 +290,7 @@ public class GuiController extends QSignalEmitter implements Controller{
 
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(),
+                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
                     null,
                     pieceNames.toArray(new Character[pieceNames.size()]),
                     new Character[0],
@@ -229,7 +307,7 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(),
+                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
                     null,
                     new Character[]{
                             getValueOn(centralWidget.getSelectedSquare()).name
@@ -240,46 +318,82 @@ public class GuiController extends QSignalEmitter implements Controller{
             return;
         }
         Move[] validMoves = gameController.getValidMoves(this.validMoves, destinationGameSquare);
-        System.out.print("num moves: ");
-        System.out.println(validMoves.length);
         switch (validMoves.length){
             case 0:
                 signals.moveCanceled.emit();
                 return;
             case 1: doMove(validMoves[0]); break;
-            default: decideMove(validMoves); break;
+            default:
+                decideMove(validMoves, destinationSquare); break;
         }
     }
 
     private void stopDragging(){
         centralWidget.dragSquare.display(null);
         centralWidget.dragSquare.hide();
-        centralWidget.deselectSquare();
         centralWidget.setDragging(false);
         updateGuiToGame();
     }
 
     // Call when multiple moves are possible. Resolve choice by letting user choose boards.
-    private void decideMove(Move[] options){
-        Square square;
-        int[] coordinates;
-        for (Move option: options){
-            for (Character boardName: option.boardNames){
-                coordinates = Game.Board.getCoordinates(option.squareNames[0]);
-                square = centralWidget.getBoard(boardName).squares[coordinates[0]][coordinates[1]];
-                centralWidget.persistentlyHighlightSquare(square);
-            }
+    private void decideMove(Move[] options, Square destinationSquare){
+        Board board;
+
+        // all options are of same type,
+        // as translation and swap are handled the same (like in for loop below)
+        decisionType = MoveType.of(options[0]);
+        if (decisionType == MoveType.STEAL && options[0].pieceNames[0] == options[0].pieceNames[1]) {
+            // both options are equivalent
+            doMove(options[0]);
+            return;
         }
-        moveDecisionSquareName = options[0].squareNames[0];
+
+        validBoards.clear();
+        // persistently highlight relevant squares
+        for (Move option: options){
+            board = centralWidget.getBoard(option.boardNames[1]);
+            if (!validBoards.contains(board)) validBoards.add(board);
+            if (MoveType.of(option) == MoveType.STEAL)
+                    board = centralWidget.getBoard(option.boardNames[2]);
+                    if (!validBoards.contains(board)) validBoards.add(board);
+            }
+        for (Board validBoard: validBoards){
+            centralWidget.persistentlyHighlightSquare(
+                    validBoard.squares[destinationSquare.row][destinationSquare.column]);
+        }
+        stopDragging();
+        moveDecisionSquare = destinationSquare;
+        centralWidget.getSelectedSquare().setSelected(false);  // purely for cosmetic reasons
         return;
     }
 
     private void doMove(Move move){
         gameController.addMove(move);
         centralWidget.unPersistentlyHighlightAllSquares();
-        moveDecisionSquareName = null;
+        moveDecisionSquare = null;
         stopDragging();
+        centralWidget.deselectSquare();
+        QApplication.restoreOverrideCursor();
+        persistentlyHighlightAllCheckBreakingSourceSquare();
+        centralWidget.deghostifyAllSquares();
         updateGuiToGame();
+    }
+
+    private void persistentlyHighlightAllCheckBreakingSourceSquare(){
+        if (gameController.inCheck()){
+            Pair<Character[], String> source;
+            int[] coordinates;
+            // TODO: 10-Jul-16 pers. highligh squares thta can break check
+            for (Move validMove:
+                    gameController.getAllCheskBreakingMoves(gameController.getCurrentPlayer())){
+                source = validMove.getSource();
+                coordinates = Game.Board.getCoordinates(source.getValue());
+                centralWidget.persistentlyHighlightSquare(
+                        centralWidget.getBoard(source.getKey()[0])
+                                .squares[coordinates[0]][coordinates[1]]
+                );
+            }
+        }
     }
 
     private void updateGuiToGame() {
@@ -323,6 +437,20 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
         }
 
+        if (gameController.inCheck()) persistentlyHighlightAllCheckBreakingSourceSquare();
+        resetHostages();
+    }
+
+    private void resetHostages() {
+        selectedHostages.clear();
+        selectedHostageSum = 0;
+        for (Board board: new Board[]{centralWidget.whitePrison, centralWidget.blackPrison}) {
+            for (Square[] squareRow : board.squares) {
+                for (Square square: squareRow){
+                    centralWidget.unPersistentlyHighlightSquare(square);
+                }
+            }
+        }
     }
 
     private void wipeBoard(Board guiBoard) {
@@ -348,14 +476,17 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void onSquareSelected(Square sourceSquare){
         // when hovered, sets square to selected if valid
+        if (moveDecisionSquare != null) return;
 
-        if (moveDecisionSquareName != null) return;
-
-        Board sourceBoard = (Board) sourceSquare.parentWidget();
-        Game.Board sourceGameBoard = gameController.getBoard(sourceBoard.name);
+        Board sourceBoard;
+        Game.Board sourceGameBoard;
         Game.Board destinationGameBoard;
         Game.Square destinationGameSquare;
-        Square destinationSquare;
+
+        centralWidget.deselectSquare();
+
+        sourceBoard = (Board) sourceSquare.parentWidget();
+        sourceGameBoard = gameController.getBoard(sourceBoard.name);
 
         if (sourceBoard.name == 'P'){
             if (sourceBoard.color == gameController.getCurrentPlayer()){
@@ -370,8 +501,6 @@ public class GuiController extends QSignalEmitter implements Controller{
                 }
             }
             return;
-            //centralWidget.setSelectedSquare(sourceSquare);
-            //sourceSquare.setCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
         } else if (sourceBoard.name == 'F'){
             Value value = getValueOn(sourceSquare, gameController.getCurrentPlayer());
             if (value == null) return;
@@ -380,20 +509,17 @@ public class GuiController extends QSignalEmitter implements Controller{
             return;
         }
 
-       validMoves = gameController.getValidMoves(
+        validMoves = gameController.getValidMoves(
                 sourceGameBoard.getSquare(sourceSquare.coordinates));
-        if (validMoves.length > 0) {
-            centralWidget.selectSquare(sourceSquare);
-        }
+        if (validMoves.length > 0) centralWidget.selectSquare(sourceSquare);
         for (Move move: validMoves) {
             Pair<Character[], String> destination = move.getDestination();
             Character[] destinationBoardNames = destination.getKey();
             String destinationSquareName = destination.getValue();
             for (Character boardName: destinationBoardNames) {
-                destinationGameBoard = gameController.getBoard(boardName);
-                destinationGameSquare = destinationGameBoard.getSquare(destinationSquareName);
-                destinationSquare = getGuiSquare(destinationGameSquare);
-                centralWidget.highlightSquare(destinationSquare);
+               destinationGameBoard = gameController.getBoard(boardName);
+               destinationGameSquare = destinationGameBoard.getSquare(destinationSquareName);
+               centralWidget.highlightSquare(getGuiSquare(destinationGameSquare));
             }
         }
     }
@@ -414,8 +540,57 @@ public class GuiController extends QSignalEmitter implements Controller{
         return collection.getPieceAt(index);
     }
 
+    private void boardSelected(Board destinationBoard){
+        if (moveDecisionSquare == null) return;
+        // board selected, necessary for translate on C, steal, swap
+        Square sourceSquare = centralWidget.getSelectedSquare();
+        Square destinationSquare = moveDecisionSquare;  // on same board as source square
+
+        String sourceSquareName = Game.Board.getSquareName(sourceSquare.coordinates);
+        String destinationSquareName = Game.Board.getSquareName(destinationSquare.coordinates);
+
+        Board sourceBoard = (Board) centralWidget.getSelectedSquare().parentWidget();
+
+        Piece sourcePiece =
+                gameController.getBoard(sourceBoard.name).getPiece(sourceSquareName);
+        Piece destinationPiece =
+                gameController.getBoard(sourceBoard.name).getPiece(destinationSquareName);
+        Piece otherPiece = // on selected board
+                gameController.getBoard(destinationBoard.name).getPiece(destinationSquareName);
+
+        Character[] pieceNames;
+        Character[] boardNames;
+        String[] squareNames;
+
+        if (decisionType == MoveType.STEAL){
+            pieceNames = new Character[]{sourcePiece.value.name, destinationPiece.value.name};
+            boardNames = new Character[]{'C', destinationBoard.name,
+                    (destinationBoard == centralWidget.alpha?
+                    centralWidget.beta: centralWidget.alpha).name};
+            squareNames = new String[]{sourceSquareName, destinationSquareName};
+        } else {
+            pieceNames = otherPiece == null?
+                    new Character[]{sourcePiece.value.name}:
+                    new Character[]{sourcePiece.value.name, otherPiece.value.name};
+            boardNames = new Character[]{sourceBoard.name, destinationBoard.name};
+            squareNames = new String[]{sourceSquareName, destinationSquareName};
+        }
+        Move move = new Move(
+                gameController.getCurrentPlayer(),
+                null,
+                null,
+                pieceNames,
+                boardNames,
+                squareNames
+        );
+        if (gameController.validMove(move)) doMove(move);
+    }
+
     private void onPieceSelected(Square sourceSquare){
+        //player clicked on square
         Board sourceBoard = (Board) sourceSquare.parentWidget();
+        boardSelected(sourceBoard);
+
         if (sourceSquare.isSelected()){
             // if it is selected, it has to be valid
             startDragging(sourceSquare);
@@ -471,8 +646,6 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void resetSettings(){
-        System.out.println("RESETTING SETTINGS!");
-
         settings.setValue(centralWidget.objectName()+"-whitePawn",
                         "D:\\Documents\\Programs\\Chass\\Assets\\Pieces\\WhitePawn.svg");
         settings.setValue(centralWidget.objectName()+"-whiteRook",

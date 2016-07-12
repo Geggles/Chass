@@ -134,7 +134,8 @@ public class Move {
             case TRANSLATE:
                 return new Pair<>(new Character[]{this.boardNames[1]}, this.squareNames[1]);
             case STEAL:
-                return new Pair<>(new Character[]{'C'}, this.squareNames[1]);
+                return new Pair<>(new Character[]{this.boardNames[1], this.boardNames[2]},
+                        this.squareNames[1]);
             default:
                 return null;
         }

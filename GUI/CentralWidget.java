@@ -25,6 +25,7 @@ public class CentralWidget extends QWidget {
     private final EnumMap<Color, Board> prisons = new EnumMap<Color, Board>(Color.class);
     private final EnumMap<Color, Board> airfields = new EnumMap<Color, Board>(Color.class);
 
+    private final ArrayList<Square> ghostSquares = new ArrayList<>();  // slightly transparent
     private final ArrayList<Square> highlightedSquares = new ArrayList<>();
     private final ArrayList<Square> persistentlyHighlightedSquares = new ArrayList<>();
     // square player is hovering (only if that square has a piece that can move)
@@ -84,6 +85,9 @@ public class CentralWidget extends QWidget {
         // TODO: 08-Jul-16
     }
 
+    public boolean isDragging(){
+        return dragging;
+    }
 
     public void setDragging(boolean state){
         dragging = state;
@@ -158,7 +162,6 @@ public class CentralWidget extends QWidget {
                     signals.squareSelected.emit(square);
                     if (board != hoveredBoard){
                         hoveredBoard = board;
-                        signals.boardSelected.emit(board);
                     }
                     return true;
                 }
@@ -167,7 +170,6 @@ public class CentralWidget extends QWidget {
                 if (target instanceof Square){
                     square = (Square) target;
                     unHighlightAllSquares();
-                    deselectSquare();
                     signals.squareDeselected.emit(square);
                     return true;
                 }
@@ -213,11 +215,6 @@ public class CentralWidget extends QWidget {
                             x - dragSquare.width() / 2,
                             y - dragSquare.height() / 2);
                     return true;
-                } else {
-                    if (hoveredBoard != null){
-                        signals.boardDeselected.emit(hoveredBoard);
-                        hoveredBoard = null;
-                    }
                 }
 
                 break;
@@ -331,5 +328,36 @@ public class CentralWidget extends QWidget {
 
     public Square getSelectedSquare(){
         return selectedSquare;
+    }
+
+    public void deghostifySquare(Square square){
+        if (!ghostSquares.contains(square)) return;
+        ghostSquares.remove(square);
+        square.setSp00ky(false);
+    }
+
+    public void deghostifyAllSquares(){
+        ghostSquares.forEach(square -> square.setSp00ky(false));
+        ghostSquares.clear();
+    }
+
+    public void ghostifySquare(Square square){
+        if (ghostSquares.contains(square)) return;
+        ghostSquares.add(square);
+        square.setSp00ky(true);
+    }
+
+    public Board getHoveredBoard() {
+        return hoveredBoard;
+    }
+
+    @Override
+    protected void mousePressEvent(QMouseEvent mouseEvent) {
+        switch (mouseEvent.type()) {
+            case MouseButtonPress:
+                if (mouseEvent.button() == Qt.MouseButton.RightButton)
+                    signals.moveCanceled.emit();
+                break;
+        }
     }
 }

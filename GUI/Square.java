@@ -3,9 +3,12 @@ package GUI;
 import Shared.Color;
 import com.trolltech.qt.core.QEvent;
 import com.trolltech.qt.core.QObject;
+import com.trolltech.qt.core.QRectF;
 import com.trolltech.qt.core.Qt;
 import com.trolltech.qt.gui.*;
 import com.trolltech.qt.svg.QGraphicsSvgItem;
+
+import javax.swing.*;
 
 public class Square extends QGraphicsView {
     public final int row;
@@ -15,10 +18,12 @@ public class Square extends QGraphicsView {
 
     private boolean selected = false;
     private boolean highlighted = false;
+    private boolean ghostPiece = false;
     private QBrush backgroundUnhighlightedBrush;
     private QBrush backgroundHighlightedBrush;
     private QCursor unselectedCursor;
     private QCursor selectedCursor;
+
 
     public Square(QWidget parent, int row, int column, Color color) {
         super(parent);
@@ -77,10 +82,6 @@ public class Square extends QGraphicsView {
     }
 
     private void applyBackgroundColor(boolean highlighted){
-/*        QPalette palette = palette();
-        palette.setColor(QPalette.ColorRole.Window,
-                highlighted? backgroundHighlightColor: backgroundColor);
-        setPalette(palette);*/
         setBackgroundBrush(highlighted? backgroundHighlightedBrush : backgroundUnhighlightedBrush);
     }
 
@@ -115,18 +116,45 @@ public class Square extends QGraphicsView {
 
     public void display(QGraphicsSvgItem item){
         QGraphicsScene scene = scene();
-        if (item == null){
-            scene.clear();
-            return;
-        }
+        scene.clear();
+        if (item == null) return;
         scene.addItem(item);
+        applyGhostification();
         resizeContent();
     }
 
+    // ghost pieces are only cosmetic
+    public void setSp00ky(boolean state){
+        ghostPiece = state;
+        applyGhostification();
+    }
+
+    private void applyGhostification(){
+        if (items().size() == 1) {
+            QGraphicsItemInterface item = items().get(0);
+            item.setOpacity(ghostPiece? 0.3: 1.0);
+        }
+    }
+
     private void resizeContent(){
-        resetTransform();
-        translate(width()/2, height()/2);
-        fitInView(scene().itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio);
+        if (items().size() == 1){
+            QGraphicsItemInterface item = items().get(0);
+
+            setSceneRect(new QRectF(rect()));
+
+            double cx = width() / 2.0;
+            double cy = height() / 2.0;
+
+            double iWidth = item.boundingRect().width();
+            double iHeight = item.boundingRect().height();
+
+            double SIZE = 0.9;  // pieces should be SIZE% of square
+            double factor = iWidth < iHeight? height()*SIZE/iHeight: width()*SIZE/iWidth;
+
+            item.setScale(factor);
+            item.prepareGeometryChange();
+            item.setPos(cx-iWidth*factor/2.0,cy-iHeight*factor/2.0);
+        }
     }
 
     @Override
@@ -134,11 +162,5 @@ public class Square extends QGraphicsView {
         resizeContent();
         // scale(Math.round(height()/27 * 0.65 * 10000.0)/10000.0,
         // Math.round(height()/27 * 0.65 * 10000.0)/10000.0);  // *0.65/27 just works...
-    }
-
-    public void setHovered(boolean state) {
-        if (state){
-
-        }
     }
 }
