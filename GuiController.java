@@ -395,7 +395,7 @@ public class GuiController extends QSignalEmitter implements Controller{
             Pair<Character[], String> source;
             int[] coordinates;
             for (Move validMove:
-                    gameController.getAllCheskBreakingMoves(gameController.getCurrentPlayer())){
+                    gameController.getAllCheckBreakingMoves(gameController.getCurrentPlayer())){
                 source = validMove.getSource();
                 coordinates = Game.Board.getCoordinates(source.getValue());
                 centralWidget.persistentlyHighlightSquare(

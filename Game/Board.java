@@ -164,16 +164,16 @@ public class Board {
                         testSquare = getSquare(row, column-3);
                         if (getPiece(testSquare) == null &&
                                 !isUnderAttack(testSquare, color.opposite())){
-                            testSquare = getSquare(row, column-2);
-                            if (getPiece(testSquare) == null &&
-                                    !isUnderAttack(testSquare, color.opposite())){
-                                testSquare = getSquare(row, column-4);
-                                Piece testPiece = getPiece(testSquare);
-                                if (testPiece != null &&
-                                        testPiece.value == Value.ROOK &&
-                                        testPiece.getColor() == color)
-                                result.add(testSquare);
-                            }
+                            testSquare = getSquare(row, column-4);
+                            Piece testPiece = getPiece(testSquare);
+                            if (testPiece != null &&
+                                    testPiece.value == Value.ROOK &&
+                                    testPiece.getColor() == color)
+                                testSquare = getSquare(row, column-2);
+                                if (getPiece(testSquare) == null &&
+                                        !isUnderAttack(testSquare, color.opposite())){
+                                    result.add(testSquare);
+                                }
                         }
                     }
 
@@ -181,16 +181,16 @@ public class Board {
                     testSquare = getSquare(row, column+1);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite())){
-                        testSquare = getSquare(row, column+2);
-                        if (getPiece(testSquare) == null &&
-                                !isUnderAttack(testSquare, color.opposite())){
-                            testSquare = getSquare(row, column+3);
-                            Piece testPiece = getPiece(testSquare);
-                            if (testPiece != null &&
-                                    testPiece.value == Value.ROOK &&
-                                    testPiece.getColor() == color)
-                            result.add(testSquare);
-                        }
+                        testSquare = getSquare(row, column+3);
+                        Piece testPiece = getPiece(testSquare);
+                        if (testPiece != null &&
+                                testPiece.value == Value.ROOK &&
+                                testPiece.getColor() == color)
+                            testSquare = getSquare(row, column+2);
+                            if (getPiece(testSquare) == null &&
+                                    !isUnderAttack(testSquare, color.opposite())){
+                                result.add(testSquare);
+                            }
                     }
                 }
             }

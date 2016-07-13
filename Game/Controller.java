@@ -34,7 +34,7 @@ public class Controller {
 
     public Move[] getMoves(Color player){
         LinkedList<Move> result = new LinkedList<>();
-        for (int i=(player == Color.WHITE? 0: 1); i<moveHistory.size(); i+=2){
+        for (int i=(player == Color.WHITE? 0: 1); i<Math.min(moveHistory.size(), currentPly); i+=2){
             result.add(moveHistory.get(i));
         }
         return result.toArray(new Move[result.size()]);
@@ -128,31 +128,30 @@ public class Controller {
         ArrayList<Value> result = new ArrayList<>(0);
         Board board = getBoard(player);
         Character boardName = board.name;
-        int row = 0;
-        if (player == Color.BLACK) row = 7;
+        int row = player == Color.WHITE? 7: 0;
         String rookSquareLeft = Board.getSquareName(row, 0);
         String rookSquareRight = Board.getSquareName(row, 7);
 
 
         // castled before
-        if (moveHistory.stream().anyMatch(move ->
+        if (moveHistory.subList(0, currentPly).stream().anyMatch(move ->
                 move.player == player &&
                 MoveType.of(move) == MoveType.CASTLE)) return new Value[0];
 
         // king moved
-        if (moveHistory.stream().anyMatch(move ->
+        if (moveHistory.subList(0, currentPly).stream().anyMatch(move ->
                 move.player == player &&
                 Arrays.asList(move.pieceNames).contains('K'))) return new Value[0];
 
         // queen rook hasn't moved
-        if (!moveHistory.stream().anyMatch(move ->
+        if (!moveHistory.subList(0, currentPly).stream().anyMatch(move ->
                 move.player == player &&
                 Arrays.asList(move.pieceNames).contains('R') &&
                 move.getSource() != null &&
                 move.getSource().getValue().equals(rookSquareLeft))) result.add(Value.QUEEN);
 
         // king rook hasn't moved
-        if (!moveHistory.stream().anyMatch(move ->
+        if (!moveHistory.subList(0, currentPly).stream().anyMatch(move ->
                 move.player == player &&
                 Arrays.asList(move.pieceNames).contains('R') &&
                 move.getSource() != null &&
@@ -173,21 +172,24 @@ public class Controller {
         switch (MoveType.of(move)){
             case CASTLE:
                 Board board = getBoard(turnPlayer);
-                int row = 0;
-                if (turnPlayer == Color.BLACK) row = 7;
-                Square newRookSquare = board.getSquare(row, 0);
-                Square newKingSquare = board.getSquare(row, 5);
-                Square oldRookSquare = board.getSquare(row, 3);
-                Square oldKingSquare = board.getSquare(row, 2);
-                if (move.pieceNames[0] == 'K') {
+                int row = turnPlayer == Color.WHITE? 7: 0;
+                Square oldKingSquare = board.getSquare(row, 4);
+                Square newKingSquare;
+                Square oldRookSquare;
+                Square newRookSquare;
+                if (move.pieceNames[0] == 'Q') {
+                    oldRookSquare = board.getSquare(row, 0);
+                    newRookSquare = board.getSquare(row, 3);
+                    newKingSquare = board.getSquare(row, 2);
+                } else {
                     oldRookSquare = board.getSquare(row, 7);
                     newRookSquare = board.getSquare(row, 5);
                     newKingSquare = board.getSquare(row, 6);
                 }
-                Piece king = board.popPiece(oldKingSquare);
-                Piece rook = board.popPiece(oldRookSquare);
-                board.setPiece(newKingSquare, king);
-                board.setPiece(newRookSquare, rook);
+                Piece king = board.popPiece(newKingSquare);
+                Piece rook = board.popPiece(newRookSquare);
+                board.setPiece(oldKingSquare, king);
+                board.setPiece(oldRookSquare, rook);
                 rook.setCanSwitchBoards(true);
                 break;
 
@@ -293,10 +295,11 @@ public class Controller {
      * Does no checking whatsoever; simply does the move. Duh. Check for validity using validMove().
      * */
     public void doMove(Move move){
+        //TODO: decouple doMove and turnPlayer, rely on move.player instead
         switch (MoveType.of(move)){
             case CASTLE:
                 Board board = getBoard(turnPlayer);
-                int row = (turnPlayer == Color.WHITE)? 0: 7;
+                int row = (turnPlayer == Color.WHITE)? 7: 0;
                 Square oldRookSquare = board.getSquare(row, 0);
                 Square oldKingSquare = board.getSquare(row, 4);
                 Square newRookSquare = board.getSquare(row, 3);
@@ -773,6 +776,7 @@ public class Controller {
     }*/
 
     public boolean validMove(Move move){
+        System.out.println(turnPlayer);
         if (move == null || MoveType.of(move) == null) return false;
         Color turnPlayer = getCurrentPlayer();
         if (move.player != turnPlayer) return false;
@@ -900,6 +904,12 @@ public class Controller {
                 // would be capture
                 if (!move.squareNames[0].equals(move.squareNames[1]) && // not null move
                         sourceBoard.getPiece(move.squareNames[1]) != null) return false;
+
+                // square two away from king is only for castling, not translation
+                if (move.pieceNames[0] == 'K' &&
+                        Board.getCoordinates(move.squareNames[0])[1] == 4 &&
+                        (Board.getCoordinates(move.squareNames[1])[1] == 2 ||
+                                Board.getCoordinates(move.squareNames[1])[1] == 6)) return false;
 
                 // staying on same board
                 if (move.boardNames[0] == move.boardNames[1]){
@@ -1265,8 +1275,10 @@ public class Controller {
 
     public void loadMoves(String[] moveStrings, int upToPly){
         LinkedList<Move> moves = new LinkedList<>();
+        turnPlayer = Color.WHITE;
         for (String moveString: moveStrings){
             moves.add(decodeMove(moveString));
+            turnPlayer = turnPlayer.opposite();
         }
         loadMoves(moves.toArray(new Move[moves.size()]), upToPly);
     }
@@ -1322,7 +1334,7 @@ public class Controller {
         return false;
     }
 
-    public Move[] getAllCheskBreakingMoves(Color player){
+    public Move[] getAllCheckBreakingMoves(Color player){
         // assume in check, player is player in check
         ArrayList<Move> result = new ArrayList<>();
         Piece[] allPieces;
