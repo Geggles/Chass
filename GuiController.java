@@ -6,8 +6,7 @@ import Shared.Color;
 import Shared.Value;
 import com.trolltech.qt.QSignalEmitter;
 import com.trolltech.qt.QVariant;
-import com.trolltech.qt.core.QPoint;
-import com.trolltech.qt.core.Qt;
+import com.trolltech.qt.core.*;
 import com.trolltech.qt.gui.*;
 import com.trolltech.qt.svg.QGraphicsSvgItem;
 import javafx.util.Pair;
@@ -35,8 +34,11 @@ public class GuiController extends QSignalEmitter implements Controller{
     private ArrayList<Board> validBoards = new ArrayList<>();  // boards that can be selected
     private MoveType decisionType = null;  // type of the move that has to be decided
 
+    private int squareShift = 0;  // amount of columns squares are shifted by
+    private QParallelAnimationGroup shiftAnimations = new QParallelAnimationGroup();
+
     public GuiController(){
-        mainWin = new MainWindow();
+        mainWin = new MainWindow("mainWinow");
 
         signals.squareSelected.connect(this, "onSquareSelected(Square)");
         signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
@@ -51,6 +53,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.exitApplication.connect(this, "onExitApplication()");
         signals.boardSelected.connect(this, "onBoardEnter(Board)");
         signals.boardDeselected.connect(this, "onBoardLeave(Board)");
+        signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
 
         centralWidget = new CentralWidget(mainWin, "centralWidget");
         mainWin.setCentralWidget(centralWidget);
@@ -60,6 +63,9 @@ public class GuiController extends QSignalEmitter implements Controller{
         else settings.loadIntoBuffer();
         loadMoves(Persistence.moveChain((String) settings.getValue("lastGame")),
                 QVariant.toInt(settings.getValue("lastPly")));
+        mainWin.restoreGeometry(
+                QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-geometry")));
+        shiftAnimations.finished.connect(this, "shiftSquares()");
         updateGuiToGame();
     }
 
@@ -70,6 +76,10 @@ public class GuiController extends QSignalEmitter implements Controller{
     @Override
     public void setSavegamePath(Path path){
         saveGamePath = path;
+    }
+
+    private void onBoardScrolled(Boolean positive){
+        scrollBoards(positive);
     }
 
     private void onBoardEnter(Board board){
@@ -232,6 +242,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         settings.setValue("lastGame",
                 Persistence.moveSeries(gameController.getMoveHistoryStrings()));
         settings.setValue("lastPly", gameController.getCurrentPly());
+        settings.setValue(mainWin.objectName()+"-geometry", mainWin.saveGeometry());
         settings.flush();
         QApplication.exit();
     }
@@ -391,6 +402,155 @@ public class GuiController extends QSignalEmitter implements Controller{
                         centralWidget.getBoard(source.getKey()[0])
                                 .squares[coordinates[0]][coordinates[1]]
                 );
+            }
+        }
+    }
+
+/*    private void scrollBoards(int columns){
+        int extraRow;
+        QPropertyAnimation animation;
+*//*        int delta = (columns + squareShift) % 8;
+        if (delta < 0) delta += 8;*//*
+
+        for (Board board:
+                new Board[]{centralWidget.alpha, centralWidget.beta, centralWidget.gamma}){
+
+            extraRow = 0;
+            for (Square extraSquare:
+                    (columns>0? board.extraColumnLeft: board.extraColumnRight)){
+
+                extraSquare.setBackgroundUnhighlightedBrush(new QBrush(QColor.fromRgb(0, 0, 0)));
+
+                ((QGridLayout) board.layout()).removeWidget(extraSquare);
+
+                extraSquare.display(getPieceIcon(gameController.getBoard(board.name)
+                        .getPiece(extraRow, columns>0? 0: 7)));
+
+                if (columns < 0) {
+                    extraSquare.move(board.x() - extraSquare.width(), extraSquare.y());
+                } else {
+                    extraSquare.move(board.x()+board.width() + extraSquare.width(), extraSquare.y());
+                }
+
+                animation = new QPropertyAnimation(extraSquare, new QByteArray("pos"));
+                animation.setStartValue(extraSquare.pos());
+                animation.setEndValue(new QPoint(Math.round(extraSquare.x() +
+                        extraSquare.width() * columns), extraSquare.y()));
+                animation.setDuration(100);
+                animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
+                shiftAnimations.addAnimation(animation);
+
+                extraRow += 1;
+            }
+
+            for (Square[] squareRow: board.squares){
+                for (Square square: squareRow){
+                    ((QGridLayout) board.layout()).removeWidget(square);
+                    animation = new QPropertyAnimation(square, new QByteArray("pos"));
+                    animation.setStartValue(square.pos());
+                    animation.setEndValue(new QPoint(Math.round(square.x() +
+                            square.width() * columns), square.y()));
+                    animation.setDuration(100);
+                    animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
+                    shiftAnimations.addAnimation(animation);
+                }
+            }
+        }
+        squareShift += columns;
+        squareShift %= 8;
+        if (squareShift < 0) squareShift += 8;
+        shiftAnimations.start();
+    }*/
+
+    private void scrollBoards(boolean left){
+        QPropertyAnimation animation;
+        QPoint coordinates;
+        int column;
+
+        squareShift += left? -1: 1;
+        squareShift %= 8;
+        if (squareShift < 0) squareShift += 8;
+
+        for (Board board:
+                new Board[]{centralWidget.alpha, centralWidget.beta, centralWidget.gamma}){
+
+            for (Square extraSquare:
+                    (left? board.extraColumnLeft: board.extraColumnRight)){
+
+                ((QGridLayout) board.layout()).removeWidget(extraSquare);
+                extraSquare.raise();
+
+                column = ((left? 7: 0) - squareShift) % 8;
+                if (column < 0) column += 8;
+
+                extraSquare.setBackgroundUnhighlightedBrush(
+                        board.squares[extraSquare.row][(column) % 8]
+                                .getBackgroundBrush()
+                );
+
+                extraSquare.display(getPieceIcon(gameController.getBoard(board.name)
+                        .getPiece(extraSquare.row, column)));
+
+                if (!left) {
+                    coordinates = new QPoint(-extraSquare.width(), extraSquare.y());
+                } else {
+                    coordinates = new QPoint(board.width(), extraSquare.y());
+                }
+
+                extraSquare.move(coordinates);
+
+                animation = new QPropertyAnimation(extraSquare, new QByteArray("pos"));
+                animation.setStartValue(extraSquare.pos());
+                animation.setEndValue(new QPoint(Math.round(extraSquare.x() +
+                        extraSquare.width() * (left? -1: 1)), extraSquare.y()));
+                animation.setDuration(300);
+                animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.InOutQuad));
+                shiftAnimations.addAnimation(animation);
+            }
+
+            for (Square[] squareRow: board.squares){
+                for (Square square: squareRow){
+                    ((QGridLayout) board.layout()).removeWidget(square);
+                    animation = new QPropertyAnimation(square, new QByteArray("pos"));
+                    animation.setStartValue(square.pos());
+                    animation.setEndValue(new QPoint(Math.round(square.x() +
+                            square.width() * (left? -1: 1)), square.y()));
+                    animation.setDuration(300);
+                    animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.InOutQuad));
+                    shiftAnimations.addAnimation(animation);
+                }
+            }
+        }
+        shiftAnimations.start();
+    }
+
+    private void shiftSquares(){
+        shiftAnimations.clear();
+        int shift;
+        int extraColumn = 0;
+        for (Board board:
+                new Board[]{centralWidget.alpha, centralWidget.beta, centralWidget.gamma}) {
+            for (Square[] extraSquareColumn:
+                    new Square[][]{board.extraColumnLeft, board.extraColumnRight}) {
+                for (Square extraSquare : extraSquareColumn) {
+                    ((QGridLayout) board.layout()).addWidget(
+                            extraSquare,
+                            extraSquare.row,
+                            extraColumn);
+                }
+                extraColumn = 7;
+            }
+
+            for (Square[] squareRow : board.squares) {
+                for (Square square : squareRow) {
+                    square.raise();
+                    shift = (squareShift + square.column) % 8;
+                    if (shift < 0) shift += 8;
+                    ((QGridLayout) board.layout()).addWidget(
+                            square,
+                            square.row,
+                            shift);
+                }
             }
         }
     }

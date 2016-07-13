@@ -24,6 +24,7 @@ public class Signals extends QSignalEmitter{
     // Emitted when player hovers over a board.
     public Signal1<Board> boardSelected = new Signal1<>();
     public Signal1<Board> boardDeselected = new Signal1<>();
+    public Signal1<Boolean> boardScrolled = new Signal1<>();  // whether shift is positive
     // Emitted when player stops hovering over a piece.
     public Signal1<Square> squareDeselected = new Signal1<>();
     // Emitted when player clicks on piece.

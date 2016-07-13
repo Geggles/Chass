@@ -74,7 +74,7 @@ public class Square extends QGraphicsView {
     }
 
     public QBrush getBackgroundBrush(){
-        return isSelected()? backgroundHighlightedBrush: backgroundUnhighlightedBrush;
+        return isHighlighted()? backgroundHighlightedBrush: backgroundUnhighlightedBrush;
     }
 
     private void applyBackgroundColor(){
