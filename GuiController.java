@@ -301,7 +301,7 @@ public class GuiController extends QSignalEmitter implements Controller{
 
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
+                    null,
                     null,
                     pieceNames.toArray(new Character[pieceNames.size()]),
                     new Character[0],
@@ -318,7 +318,7 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
+                    null,
                     null,
                     new Character[]{
                             getValueOn(centralWidget.getSelectedSquare()).name
@@ -729,11 +729,13 @@ public class GuiController extends QSignalEmitter implements Controller{
                     centralWidget.beta: centralWidget.alpha).name};
             squareNames = new String[]{sourceSquareName, destinationSquareName};
         } else {
-            pieceNames = otherPiece == null?
+            pieceNames = otherPiece == null?  // translation move
                     new Character[]{sourcePiece.value.name}:
                     new Character[]{sourcePiece.value.name, otherPiece.value.name};
             boardNames = new Character[]{sourceBoard.name, destinationBoard.name};
-            squareNames = new String[]{sourceSquareName, destinationSquareName};
+            squareNames = otherPiece == null? // translation
+                    new String[]{sourceSquareName, destinationSquareName}:
+                    new String[]{sourceSquareName};
         }
         Move move = new Move(
                 gameController.getCurrentPlayer(),

@@ -431,10 +431,12 @@ public class Controller {
 
     public void addMove(Move move){
         doMove(move);
+        turnPlayer = turnPlayer.opposite();  // necessary for getGameState
         Move moveWithState = new Move(
-                move.player, getGameState(turnPlayer.opposite()), move.promotion,
+                move.player, getGameState(), move.promotion,
                 move.pieceNames, move.boardNames, move.squareNames
         );
+        turnPlayer = turnPlayer.opposite();
         removeMovesAfter(currentPly);
         moveHistory.add(moveWithState);
         incrementPly();
@@ -1297,12 +1299,12 @@ public class Controller {
         airfields.put(Color.BLACK, new PieceCollection());
     }
 
-    public Character getGameState(Color player) {
+    public Character getGameState() {
         if (inCheck()){
-            if (canDoAMove(player)) return '+';
+            if (canDoAMove(turnPlayer)) return '+';
             return '#';
         }
-        if (!canDoAMove(player)) return '@';  // stalemate
+        if (!canDoAMove(turnPlayer)) return '@';  // stalemate
         return null;
     }
 
