@@ -5,8 +5,9 @@ import com.trolltech.qt.gui.QMainWindow;
 
 public class MainWindow extends QMainWindow{
     private Signals signals = Signals.getInstance();
-    public MainWindow() {
+    public MainWindow(String objectName) {
         super();
+        setObjectName(objectName);
     }
 
     @Override

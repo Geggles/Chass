@@ -106,7 +106,7 @@ public class Board {
      * Check whether king is in in check.
      * */
     public boolean inCheck(){
-        Square kingSquare = getSquare(getPieces(Value.KING, this.color)[0]);
+        Square kingSquare = getSquare(getPieces(Value.KING, color)[0]);
         return isUnderAttack(kingSquare, color.opposite());
     }
 
@@ -157,6 +157,7 @@ public class Board {
             if (row == baseRow && column == 4){
                 if (!inCheck()){
 
+                    // queen side castling
                     testSquare = getSquare(row, column-1);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite())){
@@ -166,17 +167,28 @@ public class Board {
                             testSquare = getSquare(row, column-2);
                             if (getPiece(testSquare) == null &&
                                     !isUnderAttack(testSquare, color.opposite())){
+                                testSquare = getSquare(row, column-4);
+                                Piece testPiece = getPiece(testSquare);
+                                if (testPiece != null &&
+                                        testPiece.value == Value.ROOK &&
+                                        testPiece.getColor() == color)
                                 result.add(testSquare);
                             }
                         }
                     }
 
+                    // king side castling
                     testSquare = getSquare(row, column+1);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite())){
                         testSquare = getSquare(row, column+2);
                         if (getPiece(testSquare) == null &&
                                 !isUnderAttack(testSquare, color.opposite())){
+                            testSquare = getSquare(row, column+3);
+                            Piece testPiece = getPiece(testSquare);
+                            if (testPiece != null &&
+                                    testPiece.value == Value.ROOK &&
+                                    testPiece.getColor() == color)
                             result.add(testSquare);
                         }
                     }
@@ -370,19 +382,23 @@ public class Board {
         int column = square.column;
         int searchRow;
         int searchColumn;
-        int result; /*Pawn*/
+        int result;
+
         int direction = +1;
         if (color == Color.BLACK) direction = -1;
         result = testSquare(row + direction, column - 1, color, Value.PAWN);
         if (result == 1) return true;
         result = testSquare(row + direction, column + 1, color, Value.PAWN);
-        if (result == 1) return true; /*Bishop*/
+        if (result == 1) return true;
         searchRow = row;
         searchColumn = column;
+
         while (++searchColumn != column && ++searchRow != row) {
+            searchColumn = wrapColumn(searchColumn);
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.BISHOP);
             if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -390,9 +406,11 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (++searchColumn != column && --searchRow != row) {
+            searchColumn = wrapColumn(searchColumn);
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.BISHOP);
             if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -400,9 +418,11 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (--searchColumn != column && ++searchRow != row) {
+            searchColumn = wrapColumn(searchColumn);
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.BISHOP);
             if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -410,9 +430,11 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (--searchColumn != column && --searchRow != row) {
+            searchColumn = wrapColumn(searchColumn);
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.BISHOP);
             if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -422,9 +444,10 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (++searchRow != row) {
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.ROOK);
             if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -432,9 +455,21 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (--searchRow != row) {
+            searchRow = wrapRow(searchRow);
             result = testSquare(searchRow, searchColumn, color, Value.ROOK);
             if (result == 1) return true;
+            //if (result <= 0) break;
+            result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
+            if (result == 1) return true;
             if (result <= 0) break;
+        }
+        searchRow = row;
+        searchColumn = column;
+        while (++searchColumn != column) {
+            searchColumn = wrapColumn(searchColumn);
+            result = testSquare(searchRow, searchColumn, color, Value.ROOK);
+            if (result == 1) return true;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;
@@ -442,19 +477,10 @@ public class Board {
         searchRow = row;
         searchColumn = column;
         while (--searchColumn != column) {
+            searchColumn = wrapColumn(searchColumn);
             result = testSquare(searchRow, searchColumn, color, Value.ROOK);
             if (result == 1) return true;
-            if (result <= 0) break;
-            result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
-            if (result == 1) return true;
-            if (result <= 0) break;
-        }
-        searchRow = row;
-        searchColumn = column;
-        while (--searchColumn != column) {
-            result = testSquare(searchRow, searchColumn, color, Value.ROOK);
-            if (result == 1) return true;
-            if (result <= 0) break;
+            //if (result <= 0) break;
             result = testSquare(searchRow, searchColumn, color, Value.QUEEN);
             if (result == 1) return true;
             if (result <= 0) break;

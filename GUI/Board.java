@@ -1,6 +1,7 @@
 package GUI;
 
 import Shared.Color;
+import com.trolltech.qt.core.QEvent;
 import com.trolltech.qt.gui.*;
 
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ public class Board extends QWidget{
     public final Color color;
     public final char name;
     public final Square[][] squares;
+
+    public final Square[] extraColumnLeft = new Square[8];
+    public final Square[] extraColumnRight = new Square[8];
 
     private final SettingSetSignalFilter lightFilter;
     private final SettingSetSignalFilter darkFilter;
@@ -68,6 +72,18 @@ public class Board extends QWidget{
             squareRow = new ArrayList<>(8);
             currentColor = currentColor.opposite();
             for (int column = 0; column < size; column++) {
+                // placeholder
+                square = new Square(this, row, column, Color.NONE);
+                ((QGridLayout)layout()).addWidget(square, row, column, 1, 1);
+                if (column == 0){
+                    square = new Square(this, row, column, color);
+                    extraColumnLeft[row] = square;
+                    ((QGridLayout)layout()).addWidget(square, row, column, 1, 1);
+                } else if (column == 7){
+                    square = new Square(this, row, column, color);
+                    extraColumnRight[row] = square;
+                    ((QGridLayout)layout()).addWidget(square, row, column, 1, 1);
+                }
                 square = new Square(this, row, column, color);
                 ((QGridLayout)layout()).addWidget(square, row, column, 1, 1);
                 (currentColor==Color.WHITE? lightFilter: darkFilter)
@@ -95,5 +111,22 @@ public class Board extends QWidget{
         }else {
             resize(width(), width());
         }
+    }
+
+    @Override
+    protected void enterEvent(QEvent event) {
+        signals.boardSelected.emit(this);
+        event.ignore();
+    }
+
+    @Override
+    protected void leaveEvent(QEvent event) {
+        signals.boardDeselected.emit(this);
+        event.ignore();
+    }
+
+    @Override
+    protected void wheelEvent(QWheelEvent wheelEvent) {
+        signals.boardScrolled.emit(wheelEvent.delta() > 0);
     }
 }
