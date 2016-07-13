@@ -20,8 +20,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     private final Signals signals = Signals.getInstance();
     private final SettingsManager settings = SettingsManager.getInstance();
     private final Game.Controller gameController = new Game.Controller();
-    private final MainWindow mainWin;
-    private final CentralWidget centralWidget;
+    private final MainWindow mainWin = new MainWindow("mainWinow");
+    private final CentralWidget centralWidget = new CentralWidget(mainWin, "centralWidget");
 
     private Move[] validMoves = new Move[0];
     private Path saveGamePath = Paths.get(new File("").toURI());
@@ -38,8 +38,6 @@ public class GuiController extends QSignalEmitter implements Controller{
     private QParallelAnimationGroup shiftAnimations = new QParallelAnimationGroup();
 
     public GuiController(){
-        mainWin = new MainWindow("mainWinow");
-
         signals.squareSelected.connect(this, "onSquareSelected(Square)");
         signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
         signals.pieceSelected.connect(this, "onPieceSelected(Square)");
@@ -55,7 +53,6 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.boardDeselected.connect(this, "onBoardLeave(Board)");
         signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
 
-        centralWidget = new CentralWidget(mainWin, "centralWidget");
         mainWin.setCentralWidget(centralWidget);
 
         setupGui();
@@ -928,10 +925,10 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void setupMenuBar(){
         QMenuBar menuBar = new QMenuBar(mainWin);
-        QMenu fileMenu = new QMenu("File");
+        QMenu fileMenu = new QMenu("Everything...");
         menuBar.addMenu(fileMenu);
         fileMenu.addAction("Save Game", signals.saveGame);
-        fileMenu.addAction("Save Game As...", signals.saveGameAs);
+        fileMenu.addAction("Save Game As", signals.saveGameAs);
         fileMenu.addAction("Load", signals.loadGame);
         fileMenu.addAction("Exit", signals.exitApplication);
         fileMenu.addAction("New Game", signals.newGame);
