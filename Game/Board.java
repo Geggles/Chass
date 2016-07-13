@@ -157,6 +157,7 @@ public class Board {
             if (row == baseRow && column == 4){
                 if (!inCheck()){
 
+                    // queen side castling
                     testSquare = getSquare(row, column-1);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite())){
@@ -166,17 +167,28 @@ public class Board {
                             testSquare = getSquare(row, column-2);
                             if (getPiece(testSquare) == null &&
                                     !isUnderAttack(testSquare, color.opposite())){
+                                testSquare = getSquare(row, column-4);
+                                Piece testPiece = getPiece(testSquare);
+                                if (testPiece != null &&
+                                        testPiece.value == Value.ROOK &&
+                                        testPiece.getColor() == color)
                                 result.add(testSquare);
                             }
                         }
                     }
 
+                    // king side castling
                     testSquare = getSquare(row, column+1);
                     if (getPiece(testSquare) == null &&
                             !isUnderAttack(testSquare, color.opposite())){
                         testSquare = getSquare(row, column+2);
                         if (getPiece(testSquare) == null &&
                                 !isUnderAttack(testSquare, color.opposite())){
+                            testSquare = getSquare(row, column+3);
+                            Piece testPiece = getPiece(testSquare);
+                            if (testPiece != null &&
+                                    testPiece.value == Value.ROOK &&
+                                    testPiece.getColor() == color)
                             result.add(testSquare);
                         }
                     }

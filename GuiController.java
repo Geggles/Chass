@@ -163,17 +163,20 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void onRewindMove(){
         gameController.rewindMove();
+        centralWidget.unPersistentlyHighlightAllSquares();
         updateGuiToGame();
     }
 
     private void onRepeatMove(){
         gameController.repeatMove();
+        centralWidget.unPersistentlyHighlightAllSquares();
         updateGuiToGame();
     }
 
     private void onNewGame(){
         gameController.resetGame();
         currentSavegame = null;
+        centralWidget.unPersistentlyHighlightAllSquares();
         updateGuiToGame();
     }
 
@@ -463,6 +466,7 @@ public class GuiController extends QSignalEmitter implements Controller{
     }*/
 
     private void scrollBoards(boolean left){
+        if (shiftAnimations.state() != QAbstractAnimation.State.Stopped) return;
         QPropertyAnimation animation;
         QPoint coordinates;
         int column;
