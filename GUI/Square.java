@@ -1,10 +1,7 @@
 package GUI;
 
 import Shared.Color;
-import com.trolltech.qt.core.QEvent;
-import com.trolltech.qt.core.QObject;
-import com.trolltech.qt.core.QRectF;
-import com.trolltech.qt.core.Qt;
+import com.trolltech.qt.core.*;
 import com.trolltech.qt.gui.*;
 import com.trolltech.qt.svg.QGraphicsSvgItem;
 
@@ -36,6 +33,8 @@ public class Square extends QGraphicsView {
         setStyleSheet("border-style: none; background: transparent;");
         setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff);  //necessary?
         setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff); //necessary?
+
+        setMinimumSize(1, 1);  // 0 doesn't work for some reason..
     }
 
     @Override
@@ -132,7 +131,7 @@ public class Square extends QGraphicsView {
     private void applyGhostification(){
         if (items().size() == 1) {
             QGraphicsItemInterface item = items().get(0);
-            item.setOpacity(ghostPiece? 0.3: 1.0);
+            item.setOpacity(ghostPiece? 0.5: 1.0);
         }
     }
 
@@ -148,7 +147,7 @@ public class Square extends QGraphicsView {
             double iWidth = item.boundingRect().width();
             double iHeight = item.boundingRect().height();
 
-            double SIZE = 0.9;  // pieces should be SIZE% of square
+            double SIZE = 0.9;  // pieces should be factor SIZE of square sized
             double factor = iWidth < iHeight? height()*SIZE/iHeight: width()*SIZE/iWidth;
 
             item.setScale(factor);
@@ -160,7 +159,5 @@ public class Square extends QGraphicsView {
     @Override
     protected void resizeEvent(QResizeEvent event) {
         resizeContent();
-        // scale(Math.round(height()/27 * 0.65 * 10000.0)/10000.0,
-        // Math.round(height()/27 * 0.65 * 10000.0)/10000.0);  // *0.65/27 just works...
     }
 }

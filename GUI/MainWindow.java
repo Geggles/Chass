@@ -14,4 +14,6 @@ public class MainWindow extends QMainWindow{
     protected void closeEvent(QCloseEvent event) {
         signals.exitApplication.emit();
     }
+
+
 }

@@ -52,6 +52,9 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.boardSelected.connect(this, "onBoardEnter(Board)");
         signals.boardDeselected.connect(this, "onBoardLeave(Board)");
         signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
+        signals.promotionSelected.connect(this, "onPromotionSelected(Value)");
+        signals.promotionEnter.connect(this, "onPromotionEnter(Value)");
+        signals.promotionLeave.connect(this, "onPromotionLeave())");
 
         mainWin.setCentralWidget(centralWidget);
 
@@ -62,8 +65,73 @@ public class GuiController extends QSignalEmitter implements Controller{
                 QVariant.toInt(settings.getValue("lastPly")));
         mainWin.restoreGeometry(
                 QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-geometry")));
+
         shiftAnimations.finished.connect(this, "shiftSquares()");
+
         updateGuiToGame();
+    }
+
+    private void onPromotionSelected(Value value){
+        setSelectingPromotion(false);
+        doMove(new Move(
+                validMoves[0].player,
+                validMoves[0].state,
+                value.name,
+                validMoves[0].pieceNames,
+                validMoves[0].boardNames,
+                validMoves[0].squareNames
+        ));
+    }
+
+    private void onPromotionEnter(Value value){
+        Square sourceSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[0]));
+        Square destinationSquareOnSource = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[1]));
+        Square destinationSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[1])
+                .getSquare(validMoves[0].squareNames[1]));
+        centralWidget.ghostifySquare(destinationSquare);
+        sourceSquare.display(null);
+        destinationSquareOnSource.display(null);
+        destinationSquare.display(getPieceIcon(value.fullName, validMoves[0].player));
+    }
+
+    private void onPromotionLeave(){
+        Square sourceSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[0]));
+        Square destinationSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[1])
+                .getSquare(validMoves[0].squareNames[1]));
+        centralWidget.deghostifySquare(destinationSquare);
+/*        sourceSquare.display(getPieceIcon("Pawn", validMoves[0].player));
+        destinationSquare.display(null);*/
+        updateGuiToGame();
+    }
+
+    public void setSelectingPromotion(boolean state){
+        centralWidget.selectPromotingPiece = state;
+        centralWidget.queenOption.setVisible(state);
+        centralWidget.rookOption.setVisible(state);
+        centralWidget.bishopOption.setVisible(state);
+        centralWidget.knightOption.setVisible(state);
+        if (state) {
+            centralWidget.persistentlyHighlightSquare(getGuiSquare(gameController
+                    .getBoard(validMoves[0].boardNames[1])
+                    .getSquare(validMoves[0].squareNames[1])
+            ));
+            centralWidget.queenOption.display(getPieceIcon("Queen", validMoves[0].player));
+            centralWidget.rookOption.display(getPieceIcon("Rook", validMoves[0].player));
+            centralWidget.bishopOption.display(getPieceIcon("Bishop", validMoves[0].player));
+            centralWidget.knightOption.display(getPieceIcon("Knight", validMoves[0].player));
+            centralWidget.queenOption.raise();
+            centralWidget.rookOption.raise();
+            centralWidget.bishopOption.raise();
+            centralWidget.knightOption.raise();
+        }
     }
 
     private void loadMoves(String[] moveChain, int upToPly) {
@@ -161,12 +229,14 @@ public class GuiController extends QSignalEmitter implements Controller{
     private void onRewindMove(){
         gameController.rewindMove();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
         updateGuiToGame();
     }
 
     private void onRepeatMove(){
         gameController.repeatMove();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
         updateGuiToGame();
     }
 
@@ -269,6 +339,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
         stopDragging();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
         updateGuiToGame();
     }
 
@@ -328,7 +399,17 @@ public class GuiController extends QSignalEmitter implements Controller{
             ));
             return;
         }
-        Move[] validMoves = gameController.getValidMoves(this.validMoves, destinationGameSquare);
+        validMoves = gameController.getValidMoves(this.validMoves, destinationGameSquare);
+        if (validMoves.length == 1 &&
+                validMoves[0].pieceNames.length >= 1 &&
+                validMoves[0].pieceNames[0] == 'P' &&
+                validMoves[0].boardNames[0] != 'C' &&
+                Game.Board.getCoordinates(validMoves[0].squareNames[1])[0] % 7 == 0){
+            // promotion
+            setSelectingPromotion(true);
+            stopDragging();
+            return;
+        }
         switch (validMoves.length){
             case 0:
                 signals.moveCanceled.emit();
@@ -387,6 +468,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         QApplication.restoreOverrideCursor();
         persistentlyHighlightAllCheckBreakingSourceSquare();
         centralWidget.deghostifyAllSquares();
+        setSelectingPromotion(false);
         updateGuiToGame();
     }
 
@@ -668,10 +750,11 @@ public class GuiController extends QSignalEmitter implements Controller{
             centralWidget.selectSquare(sourceSquare);
             return;
         }
-
-        validMoves = gameController.getValidMoves(
+        Move[] validMoves = gameController.getValidMoves(
                 sourceGameBoard.getSquare(sourceSquare.coordinates));
-        if (validMoves.length > 0) centralWidget.selectSquare(sourceSquare);
+        if (validMoves.length == 0) return;
+        this.validMoves = validMoves;
+        centralWidget.selectSquare(sourceSquare);
         for (Move move: validMoves) {
             Pair<Character[], String> destination = move.getDestination();
             Character[] destinationBoardNames = destination.getKey();

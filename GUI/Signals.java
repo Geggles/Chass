@@ -19,6 +19,9 @@ public class Signals extends QSignalEmitter{
     public Signal0 newGame = new Signal0();
     public Signal0 rewindMove = new Signal0();
     public Signal0 repeatMove = new Signal0();
+    public Signal0 promotionLeave = new Signal0();
+    public Signal1<Value> promotionSelected = new Signal1<>();
+    public Signal1<Value> promotionEnter = new Signal1<>();
     // Emitted when player hovers over a piece.
     public Signal1<Square> squareSelected = new Signal1<>();
     // Emitted when player hovers over a board.

@@ -2,6 +2,7 @@ package GUI;
 
 import Shared.Color;
 import com.trolltech.qt.core.QEvent;
+import com.trolltech.qt.core.Qt;
 import com.trolltech.qt.gui.*;
 
 import java.util.ArrayList;
@@ -72,9 +73,6 @@ public class Board extends QWidget{
             squareRow = new ArrayList<>(8);
             currentColor = currentColor.opposite();
             for (int column = 0; column < size; column++) {
-                // placeholder
-                square = new Square(this, row, column, Color.NONE);
-                ((QGridLayout)layout()).addWidget(square, row, column, 1, 1);
                 if (column == 0){
                     square = new Square(this, row, column, color);
                     extraColumnLeft[row] = square;
@@ -94,24 +92,32 @@ public class Board extends QWidget{
                 unselectedCursorFilter.addListener(square, "setUnselectedCursor", QCursor.class);
                 squareRow.add(square);
                 currentColor = currentColor.opposite();
+
+                if (column == 0 || row == 0) {
+                    // add anonymous placeholder square
+                    square = new Square(this, row, column, Color.NONE);
+                    ((QGridLayout) layout()).addWidget(square, row, column, 1, 1);
+                    square.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents);
+                }
             }
             allSquares.add(squareRow.toArray(new Square[size]));
         }
         return allSquares.toArray(new Square[size][]);
     }
 
-    /**
-     * Keep everything square.
-     * @param event
-     */
-    @Override
-    protected void resizeEvent(QResizeEvent event) {
-        if (height() < width()) {
-            resize(height(), height());
-        }else {
-            resize(width(), width());
-        }
-    }
+    // already the case because of central widget?
+    // /**
+    //  * Keep everything square.
+    //  * @param event
+    //  */
+    // @Override
+    // protected void resizeEvent(QResizeEvent event) {
+    //     if (height() < width()) {
+    //         resize(height(), height());
+    //     }else {
+    //         resize(width(), width());
+    //     }
+    // }
 
     @Override
     protected void enterEvent(QEvent event) {

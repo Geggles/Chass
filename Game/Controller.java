@@ -226,14 +226,14 @@ public class Controller {
 
                 destinationPiece = new Piece(Value.of(move.pieceNames[1]), turnPlayer.opposite());
                 getPrison(turnPlayer).removePiece(destinationPiece.value);
+                sourcePiece = destinationBoard.popPiece(move.squareNames[1]);
 
                 // undo promotion
                 if (move.promotion != null){
-                    destinationBoard.setPiece(move.squareNames[0],
+                    sourceBoard.setPiece(move.squareNames[0],
                             new Piece(Value.PAWN, turnPlayer));
                 }
                 else {
-                    sourcePiece = destinationBoard.popPiece(move.squareNames[1]);
                     sourceBoard.setPiece(move.squareNames[0], sourcePiece);
                 }
 
@@ -352,9 +352,8 @@ public class Controller {
                 destinationPiece = sourceBoard.popPiece(move.squareNames[1]);
                 destinationBoard.setPiece(move.squareNames[1], sourcePiece);
                 getPrison(turnPlayer).addPiece(destinationPiece.value);
-                if (move.pieceNames[0] == 'P' &&
-                        Board.getCoordinates(move.squareNames[1])[0] % 7 == 0) {
-                    promote(sourceBoard.getSquare(move.squareNames[1]),
+                if (move.promotion != null) {
+                    promote(destinationBoard.getSquare(move.squareNames[1]),
                             Value.of(move.promotion));
                 }
                 break;
@@ -386,9 +385,8 @@ public class Controller {
                 destinationBoard = getBoard(move.boardNames[1]);
                 sourcePiece = sourceBoard.popPiece(move.squareNames[0]);
                 destinationBoard.setPiece(move.squareNames[1], sourcePiece);
-                if (move.pieceNames[0] == 'P' &&
-                        Board.getCoordinates(move.squareNames[1])[0] % 7 == 0){
-                    promote(sourceBoard.getSquare(move.squareNames[1]),
+                if (move.promotion != null){
+                    promote(destinationBoard.getSquare(move.squareNames[1]),
                             Value.of(move.promotion));
                 }
                 break;
@@ -398,8 +396,7 @@ public class Controller {
 
     private void promote(Square square, Value value){
         Board board = square.board;
-        board.removePiece(square);
-        board.setPiece(square, new Piece(value, turnPlayer));
+        board.replacePiece(square, new Piece(value, turnPlayer));
     }
 
     public Board getBoard(Character name){
@@ -546,10 +543,11 @@ public class Controller {
                         stateString);
                 break;
             case TRANSLATE:
-                moveString = String.format("%s%s-%s_%s>%s%s",
+                moveString = String.format("%s%s-%s%s_%s>%s%s",
                         move.pieceNames[0],
                         move.squareNames[0],
                         move.squareNames[1],
+                        promotionString,
                         move.boardNames[0],
                         move.boardNames[1],
                         stateString);
@@ -776,7 +774,6 @@ public class Controller {
     }*/
 
     public boolean validMove(Move move){
-        System.out.println(turnPlayer);
         if (move == null || MoveType.of(move) == null) return false;
         Color turnPlayer = getCurrentPlayer();
         if (move.player != turnPlayer) return false;

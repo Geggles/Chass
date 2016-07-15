@@ -17,11 +17,11 @@ public class Main {
         Controller controller;
         QApplication app = null;
 
-        if (args.length != 0 && args[0].equals("gui")) {
+        if (args.length != 0 && args[0].equals("console")) {
+            controller = new ConsoleController();
+        }else{
             app = new QApplication(args);
             controller = new GuiController();
-        }else{
-            controller = new ConsoleController();
         }
 
         Path savePath = Paths.get(new File("").getAbsolutePath().concat("\\savegames"));
