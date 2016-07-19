@@ -20,8 +20,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     private final Signals signals = Signals.getInstance();
     private final SettingsManager settings = SettingsManager.getInstance();
     private final Game.Controller gameController = new Game.Controller();
-    private final MainWindow mainWin = new MainWindow("mainWinow");
-    private final CentralWidget centralWidget = new CentralWidget(mainWin, "centralWidget");
+    private final MainWindow mainWin = new MainWindow("mainWindow");
+    private final CentralWidget centralWidget = (CentralWidget) mainWin.centralWidget();
 
     private Move[] validMoves = new Move[0];
     private Path saveGamePath = Paths.get(new File("").toURI());
@@ -55,8 +55,17 @@ public class GuiController extends QSignalEmitter implements Controller{
         signals.promotionSelected.connect(this, "onPromotionSelected(Value)");
         signals.promotionEnter.connect(this, "onPromotionEnter(Value)");
         signals.promotionLeave.connect(this, "onPromotionLeave())");
+        signals.shiftCurrentPly.connect(this, "onShiftCurrentPly(int)");
+        signals.changeCurrentPly.connect(this, "onChangeCurrentPly(int)");
+        signals.setMove.connect(this, "onSetMove(int, String)");
 
-        mainWin.setCentralWidget(centralWidget);
+        QDockWidget moveNavigatorDock = new QDockWidget(mainWin);
+        QDockWidget navigatorButtonsDock = new QDockWidget(mainWin);
+        moveNavigatorDock.setWidget(mainWin.moveNavigator);
+        navigatorButtonsDock.setWidget(mainWin.navigationButtons);
+
+        mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, moveNavigatorDock);
+        mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, navigatorButtonsDock);
 
         setupGui();
         if (settings.allKeys().size()==0) resetSettings();
@@ -69,6 +78,16 @@ public class GuiController extends QSignalEmitter implements Controller{
         shiftAnimations.finished.connect(this, "shiftSquares()");
 
         updateGuiToGame();
+    }
+
+    private void onSetMove(int ply, String moveString){
+        onShiftCurrentPly(ply-gameController.getCurrentPly());
+        Move move = gameController.decodeMove(moveString);
+        if (move == null){
+            updateGuiToGame();
+            return;
+        }
+        if (gameController.validMove(move)) doMove(move);
     }
 
     private void onPromotionSelected(Value value){
@@ -99,6 +118,10 @@ public class GuiController extends QSignalEmitter implements Controller{
         destinationSquare.display(getPieceIcon(value.fullName, validMoves[0].player));
     }
 
+    private void onChangeCurrentPly(int ply){
+        onShiftCurrentPly(ply - gameController.getCurrentPly());
+    }
+
     private void onPromotionLeave(){
         Square sourceSquare = getGuiSquare(gameController
                 .getBoard(validMoves[0].boardNames[0])
@@ -107,8 +130,6 @@ public class GuiController extends QSignalEmitter implements Controller{
                 .getBoard(validMoves[0].boardNames[1])
                 .getSquare(validMoves[0].squareNames[1]));
         centralWidget.deghostifySquare(destinationSquare);
-/*        sourceSquare.display(getPieceIcon("Pawn", validMoves[0].player));
-        destinationSquare.display(null);*/
         updateGuiToGame();
     }
 
@@ -136,6 +157,8 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void loadMoves(String[] moveChain, int upToPly) {
         gameController.loadMoves(moveChain, upToPly);
+        //mainWin.moveNavigator.updateToArray(moveChain, upToPly);
+        updateGuiToGame();
     }
 
     @Override
@@ -230,6 +253,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         gameController.rewindMove();
         centralWidget.unPersistentlyHighlightAllSquares();
         setSelectingPromotion(false);
+        mainWin.moveNavigator.setCurrentPly(gameController.getCurrentPly());
         updateGuiToGame();
     }
 
@@ -237,6 +261,17 @@ public class GuiController extends QSignalEmitter implements Controller{
         gameController.repeatMove();
         centralWidget.unPersistentlyHighlightAllSquares();
         setSelectingPromotion(false);
+        mainWin.moveNavigator.setCurrentPly(gameController.getCurrentPly());
+        updateGuiToGame();
+    }
+
+    private void onShiftCurrentPly(int distance){  // mainly for moveViewer
+        centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
+        for (int i=0; i<Math.abs(distance); i++){
+            if (distance > 0) gameController.repeatMove();
+            else gameController.rewindMove();
+        }
         updateGuiToGame();
     }
 
@@ -244,6 +279,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         gameController.resetGame();
         currentSavegame = null;
         centralWidget.unPersistentlyHighlightAllSquares();
+        //mainWin.moveNavigator.updateToArray(new String[0]);
         updateGuiToGame();
     }
 
@@ -286,9 +322,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void onLoadGame(Path path){
-        gameController.loadMoves(Persistence.loadMoves(path), -1);
         currentSavegame = path;
-        updateGuiToGame();
+        loadMoves(Persistence.loadMoves(path), -1);
     }
 
     private void onSaveGame(){
@@ -404,6 +439,7 @@ public class GuiController extends QSignalEmitter implements Controller{
                 validMoves[0].pieceNames.length >= 1 &&
                 validMoves[0].pieceNames[0] == 'P' &&
                 validMoves[0].boardNames[0] != 'C' &&
+                validMoves[0].squareNames.length > 1 &&
                 Game.Board.getCoordinates(validMoves[0].squareNames[1])[0] % 7 == 0){
             // promotion
             setSelectingPromotion(true);
@@ -469,6 +505,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         persistentlyHighlightAllCheckBreakingSourceSquare();
         centralWidget.deghostifyAllSquares();
         setSelectingPromotion(false);
+        //mainWin.moveNavigator.updateToArray(gameController.getMoveHistoryStrings());
         updateGuiToGame();
     }
 
@@ -487,62 +524,6 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
         }
     }
-
-/*    private void scrollBoards(int columns){
-        int extraRow;
-        QPropertyAnimation animation;
-*//*        int delta = (columns + squareShift) % 8;
-        if (delta < 0) delta += 8;*//*
-
-        for (Board board:
-                new Board[]{centralWidget.alpha, centralWidget.beta, centralWidget.gamma}){
-
-            extraRow = 0;
-            for (Square extraSquare:
-                    (columns>0? board.extraColumnLeft: board.extraColumnRight)){
-
-                extraSquare.setBackgroundUnhighlightedBrush(new QBrush(QColor.fromRgb(0, 0, 0)));
-
-                ((QGridLayout) board.layout()).removeWidget(extraSquare);
-
-                extraSquare.display(getPieceIcon(gameController.getBoard(board.name)
-                        .getPiece(extraRow, columns>0? 0: 7)));
-
-                if (columns < 0) {
-                    extraSquare.move(board.x() - extraSquare.width(), extraSquare.y());
-                } else {
-                    extraSquare.move(board.x()+board.width() + extraSquare.width(), extraSquare.y());
-                }
-
-                animation = new QPropertyAnimation(extraSquare, new QByteArray("pos"));
-                animation.setStartValue(extraSquare.pos());
-                animation.setEndValue(new QPoint(Math.round(extraSquare.x() +
-                        extraSquare.width() * columns), extraSquare.y()));
-                animation.setDuration(100);
-                animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
-                shiftAnimations.addAnimation(animation);
-
-                extraRow += 1;
-            }
-
-            for (Square[] squareRow: board.squares){
-                for (Square square: squareRow){
-                    ((QGridLayout) board.layout()).removeWidget(square);
-                    animation = new QPropertyAnimation(square, new QByteArray("pos"));
-                    animation.setStartValue(square.pos());
-                    animation.setEndValue(new QPoint(Math.round(square.x() +
-                            square.width() * columns), square.y()));
-                    animation.setDuration(100);
-                    animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
-                    shiftAnimations.addAnimation(animation);
-                }
-            }
-        }
-        squareShift += columns;
-        squareShift %= 8;
-        if (squareShift < 0) squareShift += 8;
-        shiftAnimations.start();
-    }*/
 
     private void scrollBoards(boolean left){
         if (shiftAnimations.state() != QAbstractAnimation.State.Stopped) return;
@@ -656,7 +637,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
         boardNames = new Character[]{'P', 'F'};
         PieceCollection collection;
-        int row, column, index = 0;
+        int row, column, index;
         for (Color side: Color.values()){
             if (side == Color.NONE) continue;
             for (char boardName: boardNames) {
@@ -680,6 +661,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
 
         if (gameController.inCheck()) persistentlyHighlightAllCheckBreakingSourceSquare();
+        mainWin.moveNavigator.updateToArray(gameController.getMoveHistoryStrings(), gameController.getCurrentPly());
         resetHostages();
     }
 
@@ -886,7 +868,6 @@ public class GuiController extends QSignalEmitter implements Controller{
 
     private void setupGui(){
         setupMenuBar();
-
         mainWin.show();
     }
 

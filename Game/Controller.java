@@ -5,6 +5,7 @@ import Shared.Value;
 import javafx.util.Pair;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * this class will control the flow of the game
@@ -19,6 +20,21 @@ public class Controller {
     private Color turnPlayer = Color.WHITE;
     private LinkedList<Move> moveHistory = new LinkedList<>();
     private int currentPly = 0;
+
+    private Pattern castlePattern = Pattern.compile("^O-O(-O)?$");
+    private Pattern dropPattern = Pattern.compile("^>[PNBRQ][a-h][0-9]$");
+    private Pattern hostageExchangePattern = Pattern.compile("^[PNBRQ]+>[PNBRQ][a-h][0-9]$");
+    private Pattern swapPattern = Pattern.compile(
+            "^[PNBRQ][a-h][0-9]-[PNBRQ]_[ABC]{2}[+#@]?$" +
+                    "|" +
+            "^[PNBRQ][a-h][0-9](-[PNBRQ]){2}_[ABC]{3}[+#@]?$");
+    private Pattern capturePattern =
+            Pattern.compile("^[PNBRQK][a-h][0-9]x[PNBRQ][a-h][0-9](=[NBRQ])?_[ABC]>[ABC][+#@]?$");
+    private Pattern enPassantPattern = Pattern.compile("^P[a-h][26]xP[a-h][26]_[ABC]>[ABC][+#@]?$");
+    private Pattern stealPattern =
+            Pattern.compile("^[PNBRQK][a-h][0-9]x[PNBRQ][a-h][0-9]_[ABC](>[ABC]){2}[+#@]?$");
+    private Pattern translationPattern =
+            Pattern.compile("^[PNBRQK][a-h][0-9]-[a-h][0-9](=[NBRQ])?_[ABC]>[ABC][+#@]?$");
 
     public Controller() {
         resetGame();
@@ -75,50 +91,6 @@ public class Controller {
                                   move.pieceNames[0] == side);
     }
 
-    //TOO GENERAL - REALLY NEEDED?
-/*    public Move[] getMoves(int sourceRow, int sourceColumn,
-                           int destinationRow, int destinationColumn,
-                           Character[] pieceNames, Character[] boardNames){
-        return getMoves(Board.getSquareName(sourceRow, sourceColumn),
-                Board.getSquareName(destinationRow, destinationColumn),
-                pieceNames, boardNames);
-    }
-
-    // doesn't work for swaps
-    public Move[] getMoves(String sourceSquareName, String destinationSquareName,
-                           Character[] pieceNames, Character[] boardNames){
-        LinkedList<Move> result = new LinkedList<>();
-        for (Move move: moveHistory){
-            if (boardNames != null && !Arrays.equals(move.boardNames, boardNames)) continue;
-            if (pieceNames != null && !Arrays.equals(move.pieceNames, pieceNames)) continue;
-
-            Pair<Character[], String> source = move.getSource();
-            Pair<Character[], String> destination = move.getDestination();
-
-            if (sourceSquareName != null &&
-                    !source.getValue().equals(sourceSquareName)) continue;
-            if (destinationSquareName != null &&
-                    !destination.getValue().equals(destinationSquareName)) continue;
-
-                switch (MoveType.of(move)){
-                    case CASTLE:
-                    case SWAP2:
-
-                    case SWAP3:
-
-                    case CAPTURE:
-                    case EN_PASSANT:
-                    case TRANSLATE:
-                    case PROMOTION:
-
-                    case STEAL:
-
-                    case HOSTAGE_EXCHANGE:
-                    case DROP:
-                }
-        }
-    }*/
-
     /**
      * Check which sides a player can castle to.
      * @param player The color of the player that is to be checked.
@@ -162,6 +134,17 @@ public class Controller {
 
     public Value[] canCastleTo(){
         return canCastleTo(turnPlayer);
+    }
+
+    public boolean isMoveString(String moveString){
+        return (castlePattern.matcher(moveString).matches() ||
+                dropPattern.matcher(moveString).matches() ||
+                hostageExchangePattern.matcher(moveString).matches() ||
+                swapPattern.matcher(moveString).matches() ||
+                capturePattern.matcher(moveString).matches() ||
+                enPassantPattern.matcher(moveString).matches() ||
+                stealPattern.matcher(moveString).matches() ||
+                translationPattern.matcher(moveString).matches());
     }
 
     private void undoLastMove(){
@@ -447,7 +430,7 @@ public class Controller {
     }
 
     public void repeatMove(){
-        if (currentPly < moveHistory.size() - 1) {
+        if (currentPly < moveHistory.size()) {
             doMove(moveHistory.get(currentPly));
             incrementPly();
         }
@@ -557,6 +540,7 @@ public class Controller {
     }
 
     public Move decodeMove(String moveString){
+        if (!isMoveString(moveString)) return null;
         Character state = null;
         Character promotion = null;
         Character[] pieceNames = null;
@@ -566,7 +550,7 @@ public class Controller {
         int dropIndex = moveString.indexOf('>');
         int constellationIndex = moveString.indexOf('_');
 
-        switch (moveString.charAt(moveString.length() - 1)){  // last char
+        switch (moveString.charAt(moveString.length() - 1)) {  // last char
             case '+':
             case '#':
             case '@':
@@ -974,8 +958,9 @@ public class Controller {
 
             case HOSTAGE_EXCHANGE:
             case DROP:
-                throw new IllegalArgumentException("Can't validate Hostage Exchange or Drop" +
-                        " with this function.");
+                break;
+/*                throw new IllegalArgumentException("Can't validate Hostage Exchange or Drop" +
+                        " with this function.");*/
         }
         if (isPinned(move, turnPlayer)) return false;
         return true;
@@ -1272,9 +1257,12 @@ public class Controller {
 
     public void loadMoves(String[] moveStrings, int upToPly){
         LinkedList<Move> moves = new LinkedList<>();
+        Move move;
         turnPlayer = Color.WHITE;
         for (String moveString: moveStrings){
-            moves.add(decodeMove(moveString));
+            move = decodeMove(moveString);
+            if (move == null) return;
+            moves.add(move);
             turnPlayer = turnPlayer.opposite();
         }
         loadMoves(moves.toArray(new Move[moves.size()]), upToPly);

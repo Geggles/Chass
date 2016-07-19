@@ -256,15 +256,6 @@ public class CentralWidget extends QWidget {
         return false;
     }
 
-/*    private void updateHoveredSquares(Square square) {
-        int row = square.row;
-        int column = square.column;
-        alpha.squares[row][column].setHovered(true);
-        beta.squares[row][column].setHovered(true);
-        gamma.squares[row][column].setHovered(true);
-
-    }*/
-
     private void wrapMouseCursor(Board board, int x, int y){
         int top = board.y();
         int left = board.x();
