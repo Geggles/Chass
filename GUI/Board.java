@@ -2,6 +2,7 @@ package GUI;
 
 import Shared.Color;
 import com.trolltech.qt.core.QEvent;
+import com.trolltech.qt.core.QSize;
 import com.trolltech.qt.core.Qt;
 import com.trolltech.qt.gui.*;
 
@@ -27,7 +28,7 @@ public class Board extends QWidget{
     private final SettingSetSignalFilter unselectedCursorFilter;
 
     /**
-     * @param size Size of the board. Either 4 or 8.
+     * @param size Size of the board (in squares). Either 4 or 8.
      * @param color The color of the player that starts out on this board (BLACK/WHITE/NONE).
      */
     public Board(QWidget parent, String objectName, int size, Color color, char name){
@@ -106,18 +107,18 @@ public class Board extends QWidget{
     }
 
     // already the case because of central widget?
-    // /**
-    //  * Keep everything square.
-    //  * @param event
-    //  */
-    // @Override
-    // protected void resizeEvent(QResizeEvent event) {
-    //     if (height() < width()) {
-    //         resize(height(), height());
-    //     }else {
-    //         resize(width(), width());
-    //     }
-    // }
+    /**
+     * Keep everything square.
+     * @param event
+     */
+    @Override
+    protected void resizeEvent(QResizeEvent event) {
+        if (height() < width()) {
+            resize(height(), height());
+        }else {
+            resize(width(), width());
+        }
+    }
 
     @Override
     protected void enterEvent(QEvent event) {

@@ -38,46 +38,46 @@ public class GuiController extends QSignalEmitter implements Controller{
     private QParallelAnimationGroup shiftAnimations = new QParallelAnimationGroup();
 
     public GuiController(){
-        signals.squareSelected.connect(this, "onSquareSelected(Square)");
-        signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
-        signals.pieceSelected.connect(this, "onPieceSelected(Square)");
-        signals.moveCanceled.connect(this, "onCancelMove()");
-        signals.saveGameAs.connect(this, "onSaveGameAs()");
-        signals.saveGame.connect(this, "onSaveGame()");
-        signals.loadGame.connect(this, "onLoadGame()");
+        connectSignals();
+        loadSettings();
+        setupGui();
+
+        shiftAnimations.finished.connect(this, "shiftSquares()");
+        updateGuiToGame();
+    }
+
+    private void connectSignals(){
         signals.newGame.connect(this, "onNewGame()");
+        signals.loadGame.connect(this, "onLoadGame()");
+        signals.saveGame.connect(this, "onSaveGame()");
+        signals.saveGameAs.connect(this, "onSaveGameAs()");
         signals.rewindMove.connect(this, "onRewindMove()");
         signals.repeatMove.connect(this, "onRepeatMove()");
-        signals.exitApplication.connect(this, "onExitApplication()");
+        signals.moveCanceled.connect(this, "onCancelMove()");
+        signals.setMove.connect(this, "onSetMove(int, String)");
         signals.boardSelected.connect(this, "onBoardEnter(Board)");
-        signals.boardDeselected.connect(this, "onBoardLeave(Board)");
-        signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
-        signals.promotionSelected.connect(this, "onPromotionSelected(Value)");
-        signals.promotionEnter.connect(this, "onPromotionEnter(Value)");
         signals.promotionLeave.connect(this, "onPromotionLeave())");
+        signals.exitApplication.connect(this, "onExitApplication()");
+        signals.boardDeselected.connect(this, "onBoardLeave(Board)");
+        signals.pieceSelected.connect(this, "onPieceSelected(Square)");
+        signals.squareSelected.connect(this, "onSquareSelected(Square)");
+        signals.promotionEnter.connect(this, "onPromotionEnter(Value)");
+        signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
         signals.shiftCurrentPly.connect(this, "onShiftCurrentPly(int)");
         signals.changeCurrentPly.connect(this, "onChangeCurrentPly(int)");
-        signals.setMove.connect(this, "onSetMove(int, String)");
+        signals.promotionSelected.connect(this, "onPromotionSelected(Value)");
+        signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
+    }
 
-        QDockWidget moveNavigatorDock = new QDockWidget(mainWin);
-        QDockWidget navigatorButtonsDock = new QDockWidget(mainWin);
-        moveNavigatorDock.setWidget(mainWin.moveNavigator);
-        navigatorButtonsDock.setWidget(mainWin.navigationButtons);
-
-        mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, moveNavigatorDock);
-        mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, navigatorButtonsDock);
-
-        setupGui();
+    private void loadSettings(){
         if (settings.allKeys().size()==0) resetSettings();
         else settings.loadIntoBuffer();
         loadMoves(Persistence.moveChain((String) settings.getValue("lastGame")),
                 QVariant.toInt(settings.getValue("lastPly")));
         mainWin.restoreGeometry(
                 QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-geometry")));
-
-        shiftAnimations.finished.connect(this, "shiftSquares()");
-
-        updateGuiToGame();
+        mainWin.restoreState(
+                QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-state")));
     }
 
     private void onSetMove(int ply, String moveString){
@@ -348,6 +348,7 @@ public class GuiController extends QSignalEmitter implements Controller{
                 Persistence.moveSeries(gameController.getMoveHistoryStrings()));
         settings.setValue("lastPly", gameController.getCurrentPly());
         settings.setValue(mainWin.objectName()+"-geometry", mainWin.saveGeometry());
+        settings.setValue(mainWin.objectName()+"-state", mainWin.saveState());
         settings.flush();
         QApplication.exit();
     }
@@ -867,8 +868,28 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void setupGui(){
+        setupDockWidgets();
         setupMenuBar();
         mainWin.show();
+    }
+
+    private void setupDockWidgets() {
+        QDockWidget moveNavigatorDock = new QDockWidget(mainWin);
+        moveNavigatorDock.setObjectName(mainWin.objectName() + ".moveNavigatorDock");
+        moveNavigatorDock.setWindowTitle("Move History Navigator");
+        moveNavigatorDock.setWidget(mainWin.moveNavigator);
+        if (!mainWin.restoreDockWidget(moveNavigatorDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, moveNavigatorDock);
+        }
+
+        QDockWidget navigatorButtonsDock = new QDockWidget(mainWin);
+        navigatorButtonsDock.setObjectName(mainWin.objectName() + ".navigatorButtonsDock");
+        moveNavigatorDock.setWindowTitle("Navigate");
+        navigatorButtonsDock.setWidget(mainWin.navigationButtons);
+        if (!mainWin.restoreDockWidget(navigatorButtonsDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, navigatorButtonsDock);
+        }
+
     }
 
     private void resetSettings(){

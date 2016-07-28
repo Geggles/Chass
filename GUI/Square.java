@@ -34,6 +34,8 @@ public class Square extends QGraphicsView {
         setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff);  //necessary?
         setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff); //necessary?
 
+        setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored);
+
         setMinimumSize(1, 1);  // 0 doesn't work for some reason..
     }
 
@@ -131,11 +133,15 @@ public class Square extends QGraphicsView {
     private void applyGhostification(){
         if (items().size() == 1) {
             QGraphicsItemInterface item = items().get(0);
-            item.setOpacity(ghostPiece? 0.5: 1.0);
+            item.setOpacity(ghostPiece? 0.3: 1.0);
         }
     }
 
     private void resizeContent(){
+        resizeContent(null);
+    }
+
+    private void resizeContent(QSizeF itemSize){
         if (items().size() == 1){
             QGraphicsItemInterface item = items().get(0);
 
@@ -144,8 +150,10 @@ public class Square extends QGraphicsView {
             double cx = width() / 2.0;
             double cy = height() / 2.0;
 
-            double iWidth = item.boundingRect().width();
-            double iHeight = item.boundingRect().height();
+            if (itemSize == null) itemSize = item.boundingRect().size();
+
+            double iWidth = itemSize.width();
+            double iHeight = itemSize.height();
 
             double SIZE = 0.9;  // pieces should be factor SIZE of square sized
             double factor = iWidth < iHeight? height()*SIZE/iHeight: width()*SIZE/iWidth;

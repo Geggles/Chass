@@ -540,6 +540,7 @@ public class Controller {
     }
 
     public Move decodeMove(String moveString){
+        // TODO: Rely on Regex instead of... this...
         if (!isMoveString(moveString)) return null;
         Character state = null;
         Character promotion = null;
@@ -653,111 +654,8 @@ public class Controller {
         );
     }
 
-/*    public Move decodeMove(String moveString){
-        Move move;
-        Character state = null;
-        Character promotion = null;
-        Character[] pieceNames = null;
-        Character[] boardNames = null;
-        String[] squareNames = null;
-
-        int dropIndex = moveString.indexOf('>');
-
-        switch (moveString.charAt(moveString.length() - 1)){  // last char
-            case '+':
-            case '#':
-            case '@':
-                state = moveString.charAt(moveString.length() - 1);
-                moveString = moveString.substring(0, moveString.length() -1);
-        }
-
-        if (moveString.startsWith("O-O")){  // castle
-            pieceNames = new Character[1];
-            boardNames = new Character[0];
-            squareNames = new String[0];
-            if (moveString.equals("O-O-O")) pieceNames[0] = 'Q';
-            else pieceNames[0] = 'K';
-        }else if (dropIndex != -1){  // drop, hostage exchange
-            String pieces = moveString.substring(dropIndex+1, dropIndex+2);
-            pieces += moveString.substring(0, dropIndex);
-            pieceNames = pieces.chars()
-                    .mapToObj(c -> (char)c)
-                    .toArray(Character[]::new);
-            boardNames = new Character[0];
-            System.out.println(moveString);
-            squareNames = new String[]{moveString.substring(dropIndex+2, dropIndex+4)};
-            pieceNames[0] = moveString.charAt(1);
-        }else {
-
-            int startOfConstellation = moveString.indexOf('_');
-            if (moveString.charAt(startOfConstellation-2) == '='){
-                promotion = moveString.charAt(startOfConstellation-1);
-            }
-
-            if (moveString.charAt(3) == '-'){  // swap, translation
-                if ("012345678".charAt(Character.getNumericValue(moveString.charAt(5)))==-1) { // swap
-                    squareNames = new String[1];
-                    if (moveString.charAt(5) == '_') {  // swap2
-                        pieceNames = new Character[2];
-                        boardNames = new Character[4];
-                        pieceNames[1] = moveString.charAt(4);
-                        boardNames[2] = moveString.charAt(startOfConstellation + 4);
-                        boardNames[3] = moveString.charAt(startOfConstellation + 5);
-                    } else {  // swap3
-                        pieceNames = new Character[3];
-                        boardNames = new Character[6];
-                        pieceNames[1] = moveString.charAt(4);
-                        pieceNames[2] = moveString.charAt(6);
-                        boardNames[2] = moveString.charAt(startOfConstellation + 3);
-                        boardNames[3] = moveString.charAt(startOfConstellation + 5);
-                        boardNames[4] = moveString.charAt(startOfConstellation + 6);
-                        boardNames[5] = moveString.charAt(startOfConstellation + 7);
-                    }
-                    boardNames[1] = moveString.charAt(startOfConstellation + 2);
-                } else{  // translation
-                    squareNames = new String[2];
-                    boardNames = new Character[2];
-                    pieceNames = new Character[1];
-                    squareNames[1] = moveString.substring(4, 6);
-                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
-                }
-                pieceNames[0] = moveString.charAt(0);
-                squareNames[0] = moveString.substring(1, 3);
-            } else if (moveString.charAt(3)=='x'){  // capture/steal
-                squareNames = new String[2];
-                squareNames[1] = moveString.substring(5, 7);
-                pieceNames = new Character[2];
-                pieceNames[0] = moveString.charAt(0);
-                pieceNames[1] = moveString.charAt(4);
-                if (moveString.charAt(startOfConstellation)=='C') {  // steal
-                    boardNames = new Character[3];
-                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
-                    boardNames[2] = moveString.charAt(startOfConstellation + 5);
-                }else{  // capture/en passant
-                    boardNames = new Character[2];
-                    boardNames[1] = moveString.charAt(startOfConstellation + 3);
-                    if ("PBNQR".indexOf(moveString.charAt(4))==-1){  // en passant
-                        pieceNames = new Character[0];
-                        squareNames[1] = moveString.substring(4, 6);
-                    }
-                }
-
-            }
-            squareNames[0] = moveString.substring(1, 3);
-            boardNames[0] = moveString.charAt(startOfConstellation + 1);
-        }
-        move = new Move(
-                turnPlayer,
-                state,
-                promotion,
-                pieceNames,
-                boardNames,
-                squareNames
-        );
-        return move;
-    }*/
-
     public boolean validMove(Move move){
+        //TODO: causes problems when trying to validate an invalid decoded move (Pg4-g3_B>A for white)
         if (move == null || MoveType.of(move) == null) return false;
         Color turnPlayer = getCurrentPlayer();
         if (move.player != turnPlayer) return false;

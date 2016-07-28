@@ -33,9 +33,9 @@ public class Main {
         }
         controller.setSavegamePath(savePath);
 
-        if (args.length != 0 && args[0].equals("gui")) {
+        if (args.length != 0 && args[0].equals("console")) {
+        } else {
             app.exec();
-        }else{
         }
     }
 }
