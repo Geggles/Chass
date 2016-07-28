@@ -890,6 +890,14 @@ public class GuiController extends QSignalEmitter implements Controller{
             mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, navigatorButtonsDock);
         }
 
+        QDockWidget colorSetterDock = new QDockWidget(mainWin);
+        colorSetterDock.setObjectName(mainWin.objectName() + ".colorSetterDock");
+        moveNavigatorDock.setWindowTitle("Set Color");
+        colorSetterDock.setWidget(mainWin.colorSetter);
+        if (!mainWin.restoreDockWidget(colorSetterDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, colorSetterDock);
+        }
+
     }
 
     private void resetSettings(){
