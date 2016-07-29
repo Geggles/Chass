@@ -1,10 +1,8 @@
 package GUI;
 
 import Shared.Color;
-import com.trolltech.qt.core.QEvent;
-import com.trolltech.qt.core.QObject;
-import com.trolltech.qt.core.QPoint;
-import com.trolltech.qt.core.Qt;
+import Shared.Value;
+import com.trolltech.qt.core.*;
 import com.trolltech.qt.gui.*;
 
 import java.util.ArrayList;
@@ -34,7 +32,11 @@ public class CentralWidget extends QWidget {
     private boolean dragging = false;
     private Square hoverSquare = null;
 
-    public QWidget choiceWidget = new QWidget(this);
+    public boolean selectPromotingPiece = false;
+    public Square queenOption = new Square(this, 0, 0, Color.NONE);
+    public Square rookOption = new Square(this, 0, 1, Color.NONE);
+    public Square bishopOption = new Square(this, 0, 2, Color.NONE);
+    public Square knightOption = new Square(this, 0, 3, Color.NONE);
 
     public CentralWidget(QWidget parent, String objectName) {
         super(parent);
@@ -65,24 +67,33 @@ public class CentralWidget extends QWidget {
         installEventFilterToSquares(blackPrison);
         installEventFilterToSquares(blackAirfield);
 
-        ((QGridLayout)layout()).addWidget(alpha, 2, 0, 2, 4);
-        ((QGridLayout)layout()).addWidget(beta,  2, 4, 2, 4);
-        ((QGridLayout)layout()).addWidget(gamma, 0, 2, 2, 4);
-        ((QGridLayout)layout()).addWidget(whitePrison  ,0,0,1,2);
-        ((QGridLayout)layout()).addWidget(whiteAirfield,1,0,1,2);
-        ((QGridLayout)layout()).addWidget(blackPrison  ,0,6,1,2);
-        ((QGridLayout)layout()).addWidget(blackAirfield,1,6,1,2);
+        ((QGridLayout)layout()).addWidget(alpha,         2, 0, 2, 4);
+        ((QGridLayout)layout()).addWidget(beta,          2, 4, 2, 4);
+        ((QGridLayout)layout()).addWidget(gamma,         0, 2, 2, 4);
+        ((QGridLayout)layout()).addWidget(whitePrison  , 0, 0, 1, 2);
+        ((QGridLayout)layout()).addWidget(whiteAirfield, 1, 0, 1, 2);
+        ((QGridLayout)layout()).addWidget(blackPrison  , 0, 6, 1, 2);
+        ((QGridLayout)layout()).addWidget(blackAirfield, 1, 6, 1, 2);
+
+        queenOption.installEventFilter(this);
+        rookOption.installEventFilter(this);
+        bishopOption.installEventFilter(this);
+        knightOption.installEventFilter(this);
+
+        queenOption.setCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
+        rookOption.setCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
+        bishopOption.setCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
+        knightOption.setCursor(new QCursor(Qt.CursorShape.PointingHandCursor));
+
+        queenOption.hide();
+        rookOption.hide();
+        bishopOption.hide();
+        knightOption.hide();
 
         dragSquare.hide();
         dragSquare.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents);
 
         dragSquare.raise();
-
-        setupChoiceWidget();
-    }
-
-    private void setupChoiceWidget() {
-        // TODO: 08-Jul-16
     }
 
     public boolean isDragging(){
@@ -109,34 +120,29 @@ public class CentralWidget extends QWidget {
     protected void resizeEvent(QResizeEvent event) {
         if (height() < width()) {
             resize(height(), height());
-        }else {
+        } else if (height() > width()){
             resize(width(), width());
         }
+        adjustPromotionWidgets();
     }
 
-/*    @Override
-    protected void mousePressEvent(QMouseEvent event) {
-        LinkedList<QWidget> widgetsAt = getWidgetsAt(event.x(), event.y());
-        if (widgetsAt == null) return;
-        Square dragSquare = null;
-        Board dragBoard = null;
-        for (QWidget widget :
-                widgetsAt) {
-            if (widget instanceof Piece){
-                dragging = (Piece) widget;
-            }else if (widget instanceof Square){
-                dragSquare = (Square) widget;
-            }else if (widget instanceof Board){
-                dragBoard = (Board) widget;
-            }
-        }
-        if (dragSquare != null){
-            signals.squareSelected.emit(dragSquare);
-        }
-        System.out.println("Coords are: "+String.valueOf(new QPoint(event.x(), event.y())));
-        System.out.println("Widget is: "+String.valueOf(widgetsAt));
-        System.out.println("parent: "+String.valueOf(widgetsAt.get(0).parentWidget()));
-    }*/
+    private void adjustPromotionWidgets(){
+        QSize squareButtonSize = alpha.squares[0][0].size().multiply(2);
+        int margin = 0;//Math.round(squareButtonSize.width()*0.08f);
+        int x = mapFromParent(pos()).x()+width()/2 - margin/2 - margin - 2*squareButtonSize.width();
+        //int y = mapFromParent(pos()).y() + height()/2 - squareButtonSize.height()/2;  // center
+        int y = mapFromParent(pos()).y() + height()/2 - squareButtonSize.height();
+
+        queenOption.resize(squareButtonSize);
+        rookOption.resize(squareButtonSize);
+        bishopOption.resize(squareButtonSize);
+        knightOption.resize(squareButtonSize);
+
+        queenOption.move(x, y);
+        rookOption.move(x+squareButtonSize.width()+margin, y);
+        bishopOption.move(x+2*squareButtonSize.width()+2*margin, y);
+        knightOption.move(x+3*squareButtonSize.width()+3*margin, y);
+    }
 
     public Board getBoard(Character name){
         switch (name){
@@ -148,37 +154,55 @@ public class CentralWidget extends QWidget {
     }
 
     @Override
-    protected void mouseMoveEvent(QMouseEvent event) {
-    }
-
-    @Override
     public boolean eventFilter(QObject target, QEvent event) {
         Square square;
         switch (event.type()){
             case Enter:
                 if (target instanceof Square) {
-                    square = (Square) target;
-                    Board board = (Board) square.parentWidget();
-                    signals.squareSelected.emit(square);
-                    if (board != hoveredBoard){
-                        hoveredBoard = board;
+                    if (!selectPromotingPiece) {
+                        square = (Square) target;
+                        Board board = (Board) square.parentWidget();
+                        signals.squareSelected.emit(square);
+                        if (board != hoveredBoard) {
+                            hoveredBoard = board;
+                        }
+                        return true;
+                    } else if (((Square) target).parentWidget() == this){
+                        // promotionSquare
+                        signals.promotionEnter.emit(
+                                new Value[]{Value.QUEEN, Value.ROOK, Value.BISHOP, Value.KNIGHT}
+                                        [((Square) target).column]);
+                        return true;
                     }
-                    return true;
                 }
                 break;
             case Leave:
                 if (target instanceof Square){
-                    square = (Square) target;
-                    unHighlightAllSquares();
-                    signals.squareDeselected.emit(square);
-                    return true;
+                    if (!selectPromotingPiece) {
+                        square = (Square) target;
+                        unHighlightAllSquares();
+                        signals.squareDeselected.emit(square);
+                        return true;
+                    } else if (((Square) target).parentWidget() == this) {
+                        // promotionSquare
+                        signals.promotionLeave.emit();
+                        return true;
+                    }
                 }
                 break;
             case MouseButtonPress:
                 if (target instanceof Square &&
                         ((QMouseEvent) event).button() == Qt.MouseButton.LeftButton){
-                    signals.pieceSelected.emit((Square) target);
-                    return true;
+                    if (!selectPromotingPiece) {
+                        signals.pieceSelected.emit((Square) target);
+                        return true;
+                    } else if (((Square) target).parentWidget() == this) {
+                        // promotionSquare
+                        signals.promotionSelected.emit(
+                                new Value[]{Value.QUEEN, Value.ROOK, Value.BISHOP, Value.KNIGHT}
+                                        [((Square) target).column]);
+                        return true;
+                    }
                 }
                 else if (((QMouseEvent) event).button() == Qt.MouseButton.RightButton){
                     signals.moveCanceled.emit();
@@ -231,15 +255,6 @@ public class CentralWidget extends QWidget {
         }
         return false;
     }
-
-/*    private void updateHoveredSquares(Square square) {
-        int row = square.row;
-        int column = square.column;
-        alpha.squares[row][column].setHovered(true);
-        beta.squares[row][column].setHovered(true);
-        gamma.squares[row][column].setHovered(true);
-
-    }*/
 
     private void wrapMouseCursor(Board board, int x, int y){
         int top = board.y();
@@ -360,4 +375,11 @@ public class CentralWidget extends QWidget {
                 break;
         }
     }
+
+    @Override
+    protected void moveEvent(QMoveEvent moveEvent) {
+        adjustPromotionWidgets();
+    }
+
+
 }

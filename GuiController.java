@@ -20,8 +20,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     private final Signals signals = Signals.getInstance();
     private final SettingsManager settings = SettingsManager.getInstance();
     private final Game.Controller gameController = new Game.Controller();
-    private final MainWindow mainWin = new MainWindow("mainWinow");
-    private final CentralWidget centralWidget = new CentralWidget(mainWin, "centralWidget");
+    private final MainWindow mainWin = new MainWindow("mainWindow");
+    private final CentralWidget centralWidget = (CentralWidget) mainWin.centralWidget();
 
     private Move[] validMoves = new Move[0];
     private Path saveGamePath = Paths.get(new File("").toURI());
@@ -38,36 +38,127 @@ public class GuiController extends QSignalEmitter implements Controller{
     private QParallelAnimationGroup shiftAnimations = new QParallelAnimationGroup();
 
     public GuiController(){
-        signals.squareSelected.connect(this, "onSquareSelected(Square)");
-        signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
-        signals.pieceSelected.connect(this, "onPieceSelected(Square)");
-        signals.moveCanceled.connect(this, "onCancelMove()");
-        signals.saveGameAs.connect(this, "onSaveGameAs()");
-        signals.saveGame.connect(this, "onSaveGame()");
-        signals.loadGame.connect(this, "onLoadGame()");
+        connectSignals();
+        loadSettings();
+        setupGui();
+
+        shiftAnimations.finished.connect(this, "shiftSquares()");
+        updateGuiToGame();
+    }
+
+    private void connectSignals(){
         signals.newGame.connect(this, "onNewGame()");
+        signals.loadGame.connect(this, "onLoadGame()");
+        signals.saveGame.connect(this, "onSaveGame()");
+        signals.saveGameAs.connect(this, "onSaveGameAs()");
         signals.rewindMove.connect(this, "onRewindMove()");
         signals.repeatMove.connect(this, "onRepeatMove()");
-        signals.exitApplication.connect(this, "onExitApplication()");
+        signals.moveCanceled.connect(this, "onCancelMove()");
+        signals.setMove.connect(this, "onSetMove(int, String)");
         signals.boardSelected.connect(this, "onBoardEnter(Board)");
+        signals.promotionLeave.connect(this, "onPromotionLeave())");
+        signals.exitApplication.connect(this, "onExitApplication()");
         signals.boardDeselected.connect(this, "onBoardLeave(Board)");
+        signals.pieceSelected.connect(this, "onPieceSelected(Square)");
+        signals.squareSelected.connect(this, "onSquareSelected(Square)");
+        signals.promotionEnter.connect(this, "onPromotionEnter(Value)");
         signals.boardScrolled.connect(this, "onBoardScrolled(Boolean)");
+        signals.shiftCurrentPly.connect(this, "onShiftCurrentPly(int)");
+        signals.changeCurrentPly.connect(this, "onChangeCurrentPly(int)");
+        signals.promotionSelected.connect(this, "onPromotionSelected(Value)");
+        signals.destinationSelected.connect(this, "onDestinationSelected(Square)");
+    }
 
-        mainWin.setCentralWidget(centralWidget);
-
-        setupGui();
+    private void loadSettings(){
         if (settings.allKeys().size()==0) resetSettings();
         else settings.loadIntoBuffer();
         loadMoves(Persistence.moveChain((String) settings.getValue("lastGame")),
                 QVariant.toInt(settings.getValue("lastPly")));
         mainWin.restoreGeometry(
                 QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-geometry")));
-        shiftAnimations.finished.connect(this, "shiftSquares()");
+        mainWin.restoreState(
+                QVariant.toByteArray(settings.getValue(mainWin.objectName()+"-state")));
+    }
+
+    private void onSetMove(int ply, String moveString){
+        onShiftCurrentPly(ply-gameController.getCurrentPly());
+        Move move = gameController.decodeMove(moveString);
+        if (move == null){
+            updateGuiToGame();
+            return;
+        }
+        if (gameController.validMove(move)) doMove(move);
+    }
+
+    private void onPromotionSelected(Value value){
+        setSelectingPromotion(false);
+        doMove(new Move(
+                validMoves[0].player,
+                validMoves[0].state,
+                value.name,
+                validMoves[0].pieceNames,
+                validMoves[0].boardNames,
+                validMoves[0].squareNames
+        ));
+    }
+
+    private void onPromotionEnter(Value value){
+        Square sourceSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[0]));
+        Square destinationSquareOnSource = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[1]));
+        Square destinationSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[1])
+                .getSquare(validMoves[0].squareNames[1]));
+        centralWidget.ghostifySquare(destinationSquare);
+        sourceSquare.display(null);
+        destinationSquareOnSource.display(null);
+        destinationSquare.display(getPieceIcon(value.fullName, validMoves[0].player));
+    }
+
+    private void onChangeCurrentPly(int ply){
+        onShiftCurrentPly(ply - gameController.getCurrentPly());
+    }
+
+    private void onPromotionLeave(){
+        Square sourceSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[0])
+                .getSquare(validMoves[0].squareNames[0]));
+        Square destinationSquare = getGuiSquare(gameController
+                .getBoard(validMoves[0].boardNames[1])
+                .getSquare(validMoves[0].squareNames[1]));
+        centralWidget.deghostifySquare(destinationSquare);
         updateGuiToGame();
+    }
+
+    public void setSelectingPromotion(boolean state){
+        centralWidget.selectPromotingPiece = state;
+        centralWidget.queenOption.setVisible(state);
+        centralWidget.rookOption.setVisible(state);
+        centralWidget.bishopOption.setVisible(state);
+        centralWidget.knightOption.setVisible(state);
+        if (state) {
+            centralWidget.persistentlyHighlightSquare(getGuiSquare(gameController
+                    .getBoard(validMoves[0].boardNames[1])
+                    .getSquare(validMoves[0].squareNames[1])
+            ));
+            centralWidget.queenOption.display(getPieceIcon("Queen", validMoves[0].player));
+            centralWidget.rookOption.display(getPieceIcon("Rook", validMoves[0].player));
+            centralWidget.bishopOption.display(getPieceIcon("Bishop", validMoves[0].player));
+            centralWidget.knightOption.display(getPieceIcon("Knight", validMoves[0].player));
+            centralWidget.queenOption.raise();
+            centralWidget.rookOption.raise();
+            centralWidget.bishopOption.raise();
+            centralWidget.knightOption.raise();
+        }
     }
 
     private void loadMoves(String[] moveChain, int upToPly) {
         gameController.loadMoves(moveChain, upToPly);
+        //mainWin.moveNavigator.updateToArray(moveChain, upToPly);
+        updateGuiToGame();
     }
 
     @Override
@@ -161,12 +252,26 @@ public class GuiController extends QSignalEmitter implements Controller{
     private void onRewindMove(){
         gameController.rewindMove();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
+        mainWin.moveNavigator.setCurrentPly(gameController.getCurrentPly());
         updateGuiToGame();
     }
 
     private void onRepeatMove(){
         gameController.repeatMove();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
+        mainWin.moveNavigator.setCurrentPly(gameController.getCurrentPly());
+        updateGuiToGame();
+    }
+
+    private void onShiftCurrentPly(int distance){  // mainly for moveViewer
+        centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
+        for (int i=0; i<Math.abs(distance); i++){
+            if (distance > 0) gameController.repeatMove();
+            else gameController.rewindMove();
+        }
         updateGuiToGame();
     }
 
@@ -174,6 +279,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         gameController.resetGame();
         currentSavegame = null;
         centralWidget.unPersistentlyHighlightAllSquares();
+        //mainWin.moveNavigator.updateToArray(new String[0]);
         updateGuiToGame();
     }
 
@@ -216,9 +322,8 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void onLoadGame(Path path){
-        gameController.loadMoves(Persistence.loadMoves(path), -1);
         currentSavegame = path;
-        updateGuiToGame();
+        loadMoves(Persistence.loadMoves(path), -1);
     }
 
     private void onSaveGame(){
@@ -243,6 +348,7 @@ public class GuiController extends QSignalEmitter implements Controller{
                 Persistence.moveSeries(gameController.getMoveHistoryStrings()));
         settings.setValue("lastPly", gameController.getCurrentPly());
         settings.setValue(mainWin.objectName()+"-geometry", mainWin.saveGeometry());
+        settings.setValue(mainWin.objectName()+"-state", mainWin.saveState());
         settings.flush();
         QApplication.exit();
     }
@@ -269,6 +375,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
         stopDragging();
         centralWidget.unPersistentlyHighlightAllSquares();
+        setSelectingPromotion(false);
         updateGuiToGame();
     }
 
@@ -301,7 +408,7 @@ public class GuiController extends QSignalEmitter implements Controller{
 
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
+                    null,
                     null,
                     pieceNames.toArray(new Character[pieceNames.size()]),
                     new Character[0],
@@ -318,7 +425,7 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
             doMove(new Move(
                     gameController.getCurrentPlayer(),
-                    gameController.getGameState(gameController.getCurrentPlayer().opposite()),
+                    null,
                     null,
                     new Character[]{
                             getValueOn(centralWidget.getSelectedSquare()).name
@@ -328,7 +435,18 @@ public class GuiController extends QSignalEmitter implements Controller{
             ));
             return;
         }
-        Move[] validMoves = gameController.getValidMoves(this.validMoves, destinationGameSquare);
+        validMoves = gameController.getValidMoves(this.validMoves, destinationGameSquare);
+        if (validMoves.length == 1 &&
+                validMoves[0].pieceNames.length >= 1 &&
+                validMoves[0].pieceNames[0] == 'P' &&
+                validMoves[0].boardNames[0] != 'C' &&
+                validMoves[0].squareNames.length > 1 &&
+                Game.Board.getCoordinates(validMoves[0].squareNames[1])[0] % 7 == 0){
+            // promotion
+            setSelectingPromotion(true);
+            stopDragging();
+            return;
+        }
         switch (validMoves.length){
             case 0:
                 signals.moveCanceled.emit();
@@ -387,6 +505,8 @@ public class GuiController extends QSignalEmitter implements Controller{
         QApplication.restoreOverrideCursor();
         persistentlyHighlightAllCheckBreakingSourceSquare();
         centralWidget.deghostifyAllSquares();
+        setSelectingPromotion(false);
+        //mainWin.moveNavigator.updateToArray(gameController.getMoveHistoryStrings());
         updateGuiToGame();
     }
 
@@ -395,7 +515,7 @@ public class GuiController extends QSignalEmitter implements Controller{
             Pair<Character[], String> source;
             int[] coordinates;
             for (Move validMove:
-                    gameController.getAllCheskBreakingMoves(gameController.getCurrentPlayer())){
+                    gameController.getAllCheckBreakingMoves(gameController.getCurrentPlayer())){
                 source = validMove.getSource();
                 coordinates = Game.Board.getCoordinates(source.getValue());
                 centralWidget.persistentlyHighlightSquare(
@@ -405,62 +525,6 @@ public class GuiController extends QSignalEmitter implements Controller{
             }
         }
     }
-
-/*    private void scrollBoards(int columns){
-        int extraRow;
-        QPropertyAnimation animation;
-*//*        int delta = (columns + squareShift) % 8;
-        if (delta < 0) delta += 8;*//*
-
-        for (Board board:
-                new Board[]{centralWidget.alpha, centralWidget.beta, centralWidget.gamma}){
-
-            extraRow = 0;
-            for (Square extraSquare:
-                    (columns>0? board.extraColumnLeft: board.extraColumnRight)){
-
-                extraSquare.setBackgroundUnhighlightedBrush(new QBrush(QColor.fromRgb(0, 0, 0)));
-
-                ((QGridLayout) board.layout()).removeWidget(extraSquare);
-
-                extraSquare.display(getPieceIcon(gameController.getBoard(board.name)
-                        .getPiece(extraRow, columns>0? 0: 7)));
-
-                if (columns < 0) {
-                    extraSquare.move(board.x() - extraSquare.width(), extraSquare.y());
-                } else {
-                    extraSquare.move(board.x()+board.width() + extraSquare.width(), extraSquare.y());
-                }
-
-                animation = new QPropertyAnimation(extraSquare, new QByteArray("pos"));
-                animation.setStartValue(extraSquare.pos());
-                animation.setEndValue(new QPoint(Math.round(extraSquare.x() +
-                        extraSquare.width() * columns), extraSquare.y()));
-                animation.setDuration(100);
-                animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
-                shiftAnimations.addAnimation(animation);
-
-                extraRow += 1;
-            }
-
-            for (Square[] squareRow: board.squares){
-                for (Square square: squareRow){
-                    ((QGridLayout) board.layout()).removeWidget(square);
-                    animation = new QPropertyAnimation(square, new QByteArray("pos"));
-                    animation.setStartValue(square.pos());
-                    animation.setEndValue(new QPoint(Math.round(square.x() +
-                            square.width() * columns), square.y()));
-                    animation.setDuration(100);
-                    animation.setEasingCurve(new QEasingCurve(QEasingCurve.Type.OutQuad));
-                    shiftAnimations.addAnimation(animation);
-                }
-            }
-        }
-        squareShift += columns;
-        squareShift %= 8;
-        if (squareShift < 0) squareShift += 8;
-        shiftAnimations.start();
-    }*/
 
     private void scrollBoards(boolean left){
         if (shiftAnimations.state() != QAbstractAnimation.State.Stopped) return;
@@ -574,7 +638,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
         boardNames = new Character[]{'P', 'F'};
         PieceCollection collection;
-        int row, column, index = 0;
+        int row, column, index;
         for (Color side: Color.values()){
             if (side == Color.NONE) continue;
             for (char boardName: boardNames) {
@@ -598,6 +662,7 @@ public class GuiController extends QSignalEmitter implements Controller{
         }
 
         if (gameController.inCheck()) persistentlyHighlightAllCheckBreakingSourceSquare();
+        mainWin.moveNavigator.updateToArray(gameController.getMoveHistoryStrings(), gameController.getCurrentPly());
         resetHostages();
     }
 
@@ -668,10 +733,11 @@ public class GuiController extends QSignalEmitter implements Controller{
             centralWidget.selectSquare(sourceSquare);
             return;
         }
-
-        validMoves = gameController.getValidMoves(
+        Move[] validMoves = gameController.getValidMoves(
                 sourceGameBoard.getSquare(sourceSquare.coordinates));
-        if (validMoves.length > 0) centralWidget.selectSquare(sourceSquare);
+        if (validMoves.length == 0) return;
+        this.validMoves = validMoves;
+        centralWidget.selectSquare(sourceSquare);
         for (Move move: validMoves) {
             Pair<Character[], String> destination = move.getDestination();
             Character[] destinationBoardNames = destination.getKey();
@@ -729,11 +795,13 @@ public class GuiController extends QSignalEmitter implements Controller{
                     centralWidget.beta: centralWidget.alpha).name};
             squareNames = new String[]{sourceSquareName, destinationSquareName};
         } else {
-            pieceNames = otherPiece == null?
+            pieceNames = otherPiece == null?  // translation move
                     new Character[]{sourcePiece.value.name}:
                     new Character[]{sourcePiece.value.name, otherPiece.value.name};
             boardNames = new Character[]{sourceBoard.name, destinationBoard.name};
-            squareNames = new String[]{sourceSquareName, destinationSquareName};
+            squareNames = otherPiece == null? // translation
+                    new String[]{sourceSquareName, destinationSquareName}:
+                    new String[]{sourceSquareName};
         }
         Move move = new Move(
                 gameController.getCurrentPlayer(),
@@ -800,9 +868,36 @@ public class GuiController extends QSignalEmitter implements Controller{
     }
 
     private void setupGui(){
+        setupDockWidgets();
         setupMenuBar();
-
         mainWin.show();
+    }
+
+    private void setupDockWidgets() {
+        QDockWidget moveNavigatorDock = new QDockWidget(mainWin);
+        moveNavigatorDock.setObjectName(mainWin.objectName() + ".moveNavigatorDock");
+        moveNavigatorDock.setWindowTitle("Move History Navigator");
+        moveNavigatorDock.setWidget(mainWin.moveNavigator);
+        if (!mainWin.restoreDockWidget(moveNavigatorDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, moveNavigatorDock);
+        }
+
+        QDockWidget navigatorButtonsDock = new QDockWidget(mainWin);
+        navigatorButtonsDock.setObjectName(mainWin.objectName() + ".navigatorButtonsDock");
+        moveNavigatorDock.setWindowTitle("Navigate");
+        navigatorButtonsDock.setWidget(mainWin.navigationButtons);
+        if (!mainWin.restoreDockWidget(navigatorButtonsDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, navigatorButtonsDock);
+        }
+
+        QDockWidget colorSetterDock = new QDockWidget(mainWin);
+        colorSetterDock.setObjectName(mainWin.objectName() + ".colorSetterDock");
+        moveNavigatorDock.setWindowTitle("Set Color");
+        colorSetterDock.setWidget(mainWin.colorSetter);
+        if (!mainWin.restoreDockWidget(colorSetterDock)){
+            mainWin.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, colorSetterDock);
+        }
+
     }
 
     private void resetSettings(){
