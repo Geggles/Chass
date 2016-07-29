@@ -122,7 +122,6 @@ public class HSLWheel extends QWidget{
 
     @Override
     protected void paintEvent(QPaintEvent event) {
-        //TODO: Make it so that the border gets smoother (higher resolution), so that you don't need that pesky ring anymore
         QStyleOption styleOption = new QStyleOption();
         styleOption.initFrom(this);
         QPainter painter = new QPainter(this);
@@ -141,8 +140,9 @@ public class HSLWheel extends QWidget{
             RESOLUTION = 1;
         } else {
             if (maxRadius < 30) RESOLUTION = 1;
-            else if (maxRadius < 60) RESOLUTION = 3;
-            else RESOLUTION = 5;
+            else if (maxRadius < 90) RESOLUTION = 3;
+            else if (maxRadius < 160) RESOLUTION = 5;
+            else RESOLUTION = 7;
         }
 
         double polRadius;
